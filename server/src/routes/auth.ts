@@ -1,38 +1,70 @@
 import { Router, Request, Response } from 'express';
+import { prisma } from '../lib/prisma';
+import db from '../database/localDb';
+import { hayConexion } from '../database/syncService';
 
 const router = Router();
 
-// Usuarios de prueba hardcodeados para el POC
-const USUARIOS_POC = [
-  { usuario: 'admin', password: '1234', rolCod: 1, nombre: 'Admin Sistema', sucursal: 'D190' },
-  { usuario: 'vendedor', password: '1234', rolCod: 2, nombre: 'Juan Vendedor', sucursal: 'D190' },
-  { usuario: 'cajero', password: '1234', rolCod: 3, nombre: 'María Cajero', sucursal: 'D190' },
-  { usuario: 'consulta', password: '1234', rolCod: 4, nombre: 'Carlos Consulta', sucursal: 'D190' },
-];
-
 // POST /api/auth/login
-router.post('/login', (req: Request, res: Response) => {
+router.post('/login', async (req: Request, res: Response) => {
   const { usuario, password } = req.body as { usuario?: string; password?: string };
 
   if (!usuario || !password) {
     return res.status(400).json({ error: 'Usuario y contraseña son obligatorios' });
   }
 
-  const found = USUARIOS_POC.find(
-    (u) => u.usuario === usuario && u.password === password
-  );
+  try {
+    const conectado = await hayConexion();
 
-  if (!found) {
-    return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    if (conectado) {
+      // Login contra Supabase (online)
+      console.log('Login online contra Supabase...');
+      const found = await prisma.usuario.findFirst({
+        where: { username: usuario, password: password, estado: 1 },
+        include: { rol: true },
+      });
+
+      if (!found) {
+        return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+      }
+
+      return res.json({
+        id: found.username,
+        nombre: found.nombre_completo,
+        rolCod: found.rol_cod,
+        sucursal: found.sucursal_id,
+        modo: 'online',
+      });
+
+    } else {
+      // Login contra SQLite local (offline)
+      console.log('Login offline contra SQLite local...');
+      const found = db
+        .prepare('SELECT * FROM usuarios WHERE username = ? AND password = ? AND estado = 1')
+        .get(usuario, password) as {
+          username: string;
+          nombre_completo: string;
+          rol_cod: number;
+          sucursal_id: string;
+        } | undefined;
+
+      if (!found) {
+        return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+      }
+
+      return res.json({
+        id: found.username,
+        nombre: found.nombre_completo,
+        rolCod: found.rol_cod,
+        sucursal: found.sucursal_id,
+        modo: 'offline',
+      });
+    }
+
+  } catch (error) {
+    console.error('Error en login:', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
   }
-
-  // Retorna datos del usuario (sin la contraseña)
-  res.json({
-    id: found.usuario,
-    nombre: found.nombre,
-    rolCod: found.rolCod,
-    sucursal: found.sucursal,
-  });
 });
 
 export default router;

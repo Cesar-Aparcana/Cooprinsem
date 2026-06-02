@@ -59,8 +59,12 @@ app.use((_req, res) => {
 // Error handler centralizado (debe ir después de todas las rutas)
 app.use(globalErrorHandler);
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Backend POC Cooprinsem corriendo en http://localhost:${PORT}`);
+  
+  // Sincronizar con base central al arrancar
+  const { sincronizar } = await import('./database/syncService');
+  await sincronizar();
 });
 
 export default app;

@@ -14,12 +14,13 @@ model Cliente {
   rut              String        @db.VarChar(20)
   condicion_pago   String        @default("CONT") @db.VarChar(20)
   estado_credito   EstadoCredito @default(AL_DIA)
-  credito_asignado Int           @default(0)
+  credito_asignado  Int          @default(0)
   credito_utilizado Int          @default(0)
   sucursal         String        @default("D190") @db.VarChar(10)
   createdAt        DateTime      @default(now())
+  fecha_actualizacion  DateTime  @default(now()) @updatedAt
+  usuario_actualizacion String   @default("system") @db.VarChar(100)
 
-  // Datos generales del cliente (SAP maestro deudor)
   tratamiento           String?  @db.VarChar(20)
   nombre2               String?  @db.VarChar(100)
   concepto_busqueda     String?  @db.VarChar(50)
@@ -37,8 +38,6 @@ model Cliente {
   casilla               String?  @db.VarChar(50)
   correo_contacto       String?  @db.VarChar(100)
   correo_factura        String?  @db.VarChar(100)
-
-  // Ficha del cliente (SAP FD32 / maestro deudor)
   razon_social              String?  @db.VarChar(200)
   clasificacion_comercial   String?  @db.VarChar(50)
   representante_legal       String?  @db.VarChar(100)
@@ -56,10 +55,43 @@ model Material {
   unidad_medida   String   @default("UN") @db.VarChar(5)
   bloqueado       Boolean  @default(false)
   createdAt       DateTime @default(now())
+  fecha_actualizacion   DateTime @default(now()) @updatedAt
+  usuario_actualizacion String   @default("system") @db.VarChar(100)
 
   stocks Stock[]
 
   @@map("materiales")
+}
+
+model Usuario {
+  id                    Int      @id @default(autoincrement())
+  username              String   @unique @db.VarChar(50)
+  password              String   @db.VarChar(100)
+  nombre_completo       String   @db.VarChar(100)
+  email                 String?  @db.VarChar(100)
+  rol_cod               Int      @default(2)
+  sucursal_id           String   @default("D190") @db.VarChar(10)
+  estado                Int      @default(1)
+  createdAt             DateTime @default(now())
+  fecha_actualizacion   DateTime @default(now()) @updatedAt
+  usuario_actualizacion String   @default("system") @db.VarChar(100)
+
+  rol Rol @relation(fields: [rol_cod], references: [codigo])
+
+  @@map("usuarios")
+}
+
+model Rol {
+  codigo      Int      @id
+  nombre      String   @db.VarChar(50)
+  descripcion String?  @db.VarChar(200)
+  createdAt   DateTime @default(now())
+  fecha_actualizacion   DateTime @default(now()) @updatedAt
+  usuario_actualizacion String   @default("system") @db.VarChar(100)
+
+  usuarios Usuario[]
+
+  @@map("roles")
 }
 
 model Stock {
@@ -91,12 +123,12 @@ model PartidaAbierta {
 }
 
 model PedidoVenta {
-  id        Int      @id @default(autoincrement())
-  vbeln     String   @unique @db.VarChar(10)
-  kunnr     String   @db.VarChar(10)
-  fecha     DateTime @default(now())
-  tipo_doc  String   @default("ZPOS") @db.VarChar(50)
-  canal     String   @default("Venta Meson") @db.VarChar(50)
+  id               Int      @id @default(autoincrement())
+  vbeln            String   @unique @db.VarChar(10)
+  kunnr            String   @db.VarChar(10)
+  fecha            DateTime @default(now())
+  tipo_doc         String   @default("ZPOS") @db.VarChar(50)
+  canal            String   @default("Venta Meson") @db.VarChar(50)
   estado           String   @default("Creado") @db.VarChar(20)
   total            Int      @default(0)
   belnr_cobro      String?  @db.VarChar(10)

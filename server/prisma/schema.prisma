@@ -167,6 +167,83 @@ model Cobro {
   @@map("cobros")
 }
 
+model Interfaz {
+  IntID            BigInt    @id @default(autoincrement())
+  IntFecInicio     DateTime? @db.Timestamptz()
+  IntTip           Int?
+  IntNom           String?   @db.VarChar(100)
+  IntFecTermino    DateTime? @db.Timestamptz()
+  IntCantActualiza Int?
+  IntEstado        String?   @db.VarChar(10)
+  IntObs           String?
+
+  @@map("Interfases_SAP")
+}
+
+model SapBanco {
+  id              Int      @id @default(autoincrement())
+  BankCountry     String   @db.VarChar(3)
+  BankKey         String   @db.VarChar(15)
+  BankName        String   @default("") @db.VarChar(120)
+  Region          String   @default("") @db.VarChar(10)
+  Street          String   @default("") @db.VarChar(120)
+  City            String   @default("") @db.VarChar(50)
+  Branch          String   @default("") @db.VarChar(40)
+  SwiftCode       String   @default("") @db.VarChar(11)
+  BankCountryName String   @default("") @db.VarChar(50)
+  created_at      DateTime @default(now()) @db.Timestamptz()
+
+  @@unique([BankKey, BankCountry])
+  @@map("Sap_banco")
+}
+
+model SapCentro {
+  id                            Int      @id @default(autoincrement())
+  Plant                         String   @unique @db.VarChar(4)
+  PlantName                     String   @default("") @db.VarChar(30)
+  ValuationArea                 String   @default("") @db.VarChar(4)
+  PlantCustomer                 String   @default("") @db.VarChar(10)
+  PlantSupplier                 String   @default("") @db.VarChar(10)
+  SalesOrganization             String   @default("") @db.VarChar(4)
+  Language                      String   @default("") @db.VarChar(2)
+  IsMarkedForArchiving          Boolean  @default(false)
+  created_at                    DateTime @default(now()) @db.Timestamptz()
+
+  @@map("Sap_centro")
+}
+
+model SapCentroCosto {
+  id                Int       @id @default(autoincrement())
+  ControllingArea   String    @db.VarChar(4)
+  CostCenter        String    @db.VarChar(10)
+  ValidityEndDate   DateTime? @db.Timestamptz()
+  ValidityStartDate DateTime? @db.Timestamptz()
+  CostCenterCategory String   @default("") @db.VarChar(1)
+  IsBlocked         Boolean   @default(false)
+  CompanyCode       String    @default("") @db.VarChar(4)
+  Department        String    @default("") @db.VarChar(12)
+  Country           String    @default("") @db.VarChar(3)
+  Language          String    @default("") @db.VarChar(2)
+  created_at        DateTime  @default(now()) @db.Timestamptz()
+
+  @@map("Sap_centrocosto")
+}
+
+model SapSociedad {
+  id                 Int      @id @default(autoincrement())
+  CompanyCode        String   @unique @db.VarChar(4)
+  CompanyCodeName    String   @default("") @db.VarChar(100)
+  CityName           String   @default("") @db.VarChar(35)
+  Country            String   @default("") @db.VarChar(3)
+  Currency           String   @default("") @db.VarChar(5)
+  Language           String   @default("") @db.VarChar(2)
+  ChartOfAccounts    String   @default("") @db.VarChar(4)
+  ControllingArea    String   @default("") @db.VarChar(4)
+  created_at         DateTime @default(now()) @db.Timestamptz()
+
+  @@map("Sap_sociedad")
+}
+
 enum EstadoCredito {
   BLOQUEADO
   AL_DIA

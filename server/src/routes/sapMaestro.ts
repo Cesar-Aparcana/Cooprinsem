@@ -1,0 +1,81 @@
+import { Router, Request, Response } from 'express';
+import { prisma } from '../lib/prisma';
+import { asyncHandler } from '../middleware/errorHandler';
+
+const router = Router();
+
+// GET /api/sap-maestro/bancos
+router.get('/bancos', asyncHandler(async (req: Request, res: Response) => {
+  const { search } = req.query;
+
+  const bancos = await prisma.sapBanco.findMany({
+    where: search ? {
+      OR: [
+        { BankKey: { contains: String(search), mode: 'insensitive' } },
+        { BankName: { contains: String(search), mode: 'insensitive' } },
+        { BankCountry: { contains: String(search), mode: 'insensitive' } },
+      ]
+    } : undefined,
+    orderBy: { BankKey: 'asc' },
+    take: 200,
+  });
+
+  res.json({ d: { results: bancos } });
+}));
+
+// GET /api/sap-maestro/centros
+router.get('/centros', asyncHandler(async (req: Request, res: Response) => {
+  const { search } = req.query;
+
+  const centros = await prisma.sapCentro.findMany({
+    where: search ? {
+      OR: [
+        { Plant: { contains: String(search), mode: 'insensitive' } },
+        { PlantName: { contains: String(search), mode: 'insensitive' } },
+      ]
+    } : undefined,
+    orderBy: { Plant: 'asc' },
+    take: 200,
+  });
+
+  res.json({ d: { results: centros } });
+}));
+
+// GET /api/sap-maestro/centros-costo
+router.get('/centros-costo', asyncHandler(async (req: Request, res: Response) => {
+  const { search } = req.query;
+
+  const centrosCosto = await prisma.sapCentroCosto.findMany({
+    where: search ? {
+      OR: [
+        { CostCenter: { contains: String(search), mode: 'insensitive' } },
+        { ControllingArea: { contains: String(search), mode: 'insensitive' } },
+        { Department: { contains: String(search), mode: 'insensitive' } },
+      ]
+    } : undefined,
+    orderBy: { CostCenter: 'asc' },
+    take: 200,
+  });
+
+  res.json({ d: { results: centrosCosto } });
+}));
+
+// GET /api/sap-maestro/sociedades
+router.get('/sociedades', asyncHandler(async (req: Request, res: Response) => {
+  const { search } = req.query;
+
+  const sociedades = await prisma.sapSociedad.findMany({
+    where: search ? {
+      OR: [
+        { CompanyCode: { contains: String(search), mode: 'insensitive' } },
+        { CompanyCodeName: { contains: String(search), mode: 'insensitive' } },
+      ]
+    } : undefined,
+    orderBy: { CompanyCode: 'asc' },
+    take: 200,
+  });
+
+  res.json({ d: { results: sociedades } });
+}));
+
+export default router;

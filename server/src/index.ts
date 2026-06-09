@@ -14,6 +14,8 @@ import anticiposRouter from './routes/anticipos';
 import arqueoRouter from './routes/arqueo';
 import authRouter from './routes/auth';
 import adminRouter from './routes/admin';
+import interfacesRouter from './routes/interfaces';
+import sapMaestroRouter from './routes/sapMaestro';
 
 const app = express();
 const PORT = parseInt(process.env['PORT'] ?? '3001', 10);
@@ -50,6 +52,8 @@ app.use('/api/anticipos', anticiposRouter);
 app.use('/api/arqueo', arqueoRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/interfaces', interfacesRouter);
+app.use('/api/sap-maestro', sapMaestroRouter);
 
 // 404 handler
 app.use((_req, res) => {

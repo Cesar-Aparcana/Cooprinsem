@@ -10,19 +10,33 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 
   const where: Record<string, unknown> = {};
 
-  if (tipo) {
+  if (tipo && tipo !== '') {
     where['IntTip'] = Number(tipo);
   }
 
-  if (estado) {
+  if (estado && estado !== '') {
     where['IntEstado'] = String(estado);
   }
 
   if (desde || hasta) {
-    where['IntFecInicio'] = {
-      ...(desde ? { gte: new Date(String(desde)) } : {}),
-      ...(hasta ? { lte: new Date(String(hasta)) } : {}),
-    };
+    const fechaFiltro: Record<string, Date> = {};
+
+    if (desde) {
+      // Inicio del día en Chile (UTC-4 = +4 horas en UTC)
+      const d = new Date(String(desde));
+      d.setUTCHours(4, 0, 0, 0);
+      fechaFiltro['gte'] = d;
+    }
+
+    if (hasta) {
+      // Fin del día en Chile (UTC-4 = +28 horas = día siguiente 04:00 UTC)
+      const h = new Date(String(hasta));
+      h.setUTCDate(h.getUTCDate() + 1);
+      h.setUTCHours(3, 59, 59, 999);
+      fechaFiltro['lte'] = h;
+    }
+
+    where['IntFecInicio'] = fechaFiltro;
   }
 
   const interfaces = await prisma.interfaz.findMany({

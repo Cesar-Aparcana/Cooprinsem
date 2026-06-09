@@ -28,25 +28,44 @@ import '@ui5/webcomponents-icons/dist/add-employee.js'
 import '@ui5/webcomponents-icons/dist/edit.js'
 import '@ui5/webcomponents-icons/dist/activate.js'
 import '@ui5/webcomponents-icons/dist/decline.js'
+import '@ui5/webcomponents-icons/dist/connected.js'
+import '@ui5/webcomponents-icons/dist/database.js'
 import type { IUsuarioAdmin, ICreateUsuarioRequest, IUpdateUsuarioRequest, IRol, ISucursal } from '@/types/admin'
+import type { IInterfaz, ISapBanco, ISapCentro, ISapCentroCosto, ISapSociedad } from '@/types/sapMaestro'
 import { getUsuarios, createUsuario, updateUsuario, toggleEstadoUsuario, getRoles, getSucursales } from '@/services/api/admin'
+import { getInterfases, getSapBancos, getSapCentros, getSapCentrosCosto, getSapSociedades } from '@/services/api/sapMaestro'
 
-type TabActiva = 'usuarios' | 'roles' | 'sucursales'
+type TabActiva = 'usuarios' | 'roles' | 'sucursales' | 'interfases' | 'tablas-sap'
+type TabSap = 'bancos' | 'centros' | 'centros-costo' | 'sociedades'
 
 const MENU_ADMIN = [
   { id: 'usuarios' as TabActiva, label: 'Usuarios', icon: 'employee' },
   { id: 'roles' as TabActiva, label: 'Roles', icon: 'role' },
   { id: 'sucursales' as TabActiva, label: 'Sucursales', icon: 'building' },
+  { id: 'interfases' as TabActiva, label: 'Interfases', icon: 'connected' },
+  { id: 'tablas-sap' as TabActiva, label: 'Tablas SAP', icon: 'database' },
 ] as const
 
-// Colores de tag por rol
+const TIPOS_INTERFAZ: Record<number, string> = {
+  1: 'Sync Productos',
+  2: 'Sync Bancos',
+  3: 'Sync Sociedades',
+  4: 'Sync Centros',
+  5: 'Sync Centro Costo',
+}
+
 function rolDesign(rolCod: number): 'Set1' | 'Set2' | 'Set3' {
   switch (rolCod) {
-    case 1: return 'Set1' // azul — Administrador
-    case 2: return 'Set2' // verde — Ventas
-    case 3: return 'Set3' // naranja — Caja
-    default: return 'Set1' // gris — Consultas
+    case 1: return 'Set1'
+    case 2: return 'Set2'
+    case 3: return 'Set3'
+    default: return 'Set1'
   }
+}
+
+function formatFecha(fecha: string | null): string {
+  if (!fecha) return '—'
+  return new Date(fecha).toLocaleString('es-CL')
 }
 
 export function AdminPage() {
@@ -69,10 +88,22 @@ export function AdminPage() {
   const [formEstado, setFormEstado] = useState<1 | 2>(1)
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-
-  // Confirmación desactivar
   const [showDesactivarConfirm, setShowDesactivarConfirm] = useState(false)
   const [userToToggle, setUserToToggle] = useState<IUsuarioAdmin | null>(null)
+
+  // Interfases
+  const [interfases, setInterfases] = useState<IInterfaz[]>([])
+  const [filtroDesde, setFiltroDesde] = useState('')
+  const [filtroHasta, setFiltroHasta] = useState('')
+  const [filtroTipo, setFiltroTipo] = useState('')
+
+  // Tablas SAP
+  const [tabSap, setTabSap] = useState<TabSap>('bancos')
+  const [bancos, setBancos] = useState<ISapBanco[]>([])
+  const [centros, setCentros] = useState<ISapCentro[]>([])
+  const [centrosCosto, setCentrosCosto] = useState<ISapCentroCosto[]>([])
+  const [sociedades, setSociedades] = useState<ISapSociedad[]>([])
+  const [searchSap, setSearchSap] = useState('')
 
   // Cargar datos según tab activa
   useEffect(() => {
@@ -89,15 +120,71 @@ export function AdminPage() {
         .then(setRoles)
         .catch((e: Error) => setError(e.message))
         .finally(() => setIsLoading(false))
-    } else {
+    } else if (tabActiva === 'sucursales') {
       getSucursales()
         .then(setSucursales)
+        .catch((e: Error) => setError(e.message))
+        .finally(() => setIsLoading(false))
+    } else if (tabActiva === 'interfases') {
+      getInterfases()
+        .then(setInterfases)
+        .catch((e: Error) => setError(e.message))
+        .finally(() => setIsLoading(false))
+    } else if (tabActiva === 'tablas-sap') {
+      getSapBancos()
+        .then(setBancos)
         .catch((e: Error) => setError(e.message))
         .finally(() => setIsLoading(false))
     }
   }, [tabActiva])
 
-  // Abrir modal para nuevo usuario
+  // Cargar datos SAP según subtab
+  useEffect(() => {
+    if (tabActiva !== 'tablas-sap') return
+    setIsLoading(true)
+    setError(null)
+    setSearchSap('')
+
+    if (tabSap === 'bancos') {
+      getSapBancos().then(setBancos).catch((e: Error) => setError(e.message)).finally(() => setIsLoading(false))
+    } else if (tabSap === 'centros') {
+      getSapCentros().then(setCentros).catch((e: Error) => setError(e.message)).finally(() => setIsLoading(false))
+    } else if (tabSap === 'centros-costo') {
+      getSapCentrosCosto().then(setCentrosCosto).catch((e: Error) => setError(e.message)).finally(() => setIsLoading(false))
+    } else if (tabSap === 'sociedades') {
+      getSapSociedades().then(setSociedades).catch((e: Error) => setError(e.message)).finally(() => setIsLoading(false))
+    }
+  }, [tabSap, tabActiva])
+
+  // Buscar en tablas SAP
+  const handleBuscarSap = useCallback(() => {
+    setIsLoading(true)
+    setError(null)
+    if (tabSap === 'bancos') {
+      getSapBancos(searchSap).then(setBancos).catch((e: Error) => setError(e.message)).finally(() => setIsLoading(false))
+    } else if (tabSap === 'centros') {
+      getSapCentros(searchSap).then(setCentros).catch((e: Error) => setError(e.message)).finally(() => setIsLoading(false))
+    } else if (tabSap === 'centros-costo') {
+      getSapCentrosCosto(searchSap).then(setCentrosCosto).catch((e: Error) => setError(e.message)).finally(() => setIsLoading(false))
+    } else if (tabSap === 'sociedades') {
+      getSapSociedades(searchSap).then(setSociedades).catch((e: Error) => setError(e.message)).finally(() => setIsLoading(false))
+    }
+  }, [tabSap, searchSap])
+
+  // Filtrar interfases
+  const handleFiltrarInterfases = useCallback(() => {
+    setIsLoading(true)
+    setError(null)
+    getInterfases({
+      tipo: filtroTipo ? Number(filtroTipo) : undefined,
+      desde: filtroDesde || undefined,
+      hasta: filtroHasta || undefined,
+    })
+      .then(setInterfases)
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setIsLoading(false))
+  }, [filtroTipo, filtroDesde, filtroHasta])
+
   const handleNuevoUsuario = useCallback(() => {
     setEditingUser(null)
     setFormNombre('')
@@ -111,7 +198,6 @@ export function AdminPage() {
     setShowModal(true)
   }, [])
 
-  // Abrir modal para editar usuario
   const handleEditarUsuario = useCallback((user: IUsuarioAdmin) => {
     setEditingUser(user)
     setFormNombre(user.nombreCompleto)
@@ -125,50 +211,21 @@ export function AdminPage() {
     setShowModal(true)
   }, [])
 
-  // Guardar usuario (crear o editar)
   const handleGuardar = useCallback(async () => {
-    // Validar campos obligatorios
-    if (!formNombre.trim()) {
-      setFormError('El nombre completo es obligatorio')
-      return
-    }
-
-    if (!editingUser && !formUsername.trim()) {
-      setFormError('El usuario (login) es obligatorio')
-      return
-    }
-
-    if (!editingUser && !formPassword.trim()) {
-      setFormError('La contraseña es obligatoria')
-      return
-    }
+    if (!formNombre.trim()) { setFormError('El nombre completo es obligatorio'); return }
+    if (!editingUser && !formUsername.trim()) { setFormError('El usuario (login) es obligatorio'); return }
+    if (!editingUser && !formPassword.trim()) { setFormError('La contraseña es obligatoria'); return }
 
     setIsSaving(true)
     setFormError(null)
 
     try {
       if (editingUser) {
-        // Actualizar usuario existente
-        const data: IUpdateUsuarioRequest = {
-          nombreCompleto: formNombre,
-          email: formEmail,
-          rolCod: formRol as 1 | 2 | 3 | 4,
-          sucursalId: formSucursal,
-          estado: formEstado,
-        }
+        const data: IUpdateUsuarioRequest = { nombreCompleto: formNombre, email: formEmail, rolCod: formRol as 1 | 2 | 3 | 4, sucursalId: formSucursal, estado: formEstado }
         const updated = await updateUsuario(editingUser.id, data)
         setUsuarios((prev) => prev.map((u) => (u.id === updated.id ? updated : u)))
       } else {
-        // Crear nuevo usuario
-        const data: ICreateUsuarioRequest = {
-          username: formUsername,
-          password: formPassword,
-          nombreCompleto: formNombre,
-          email: formEmail,
-          rolCod: formRol as 1 | 2 | 3 | 4,
-          sucursalId: formSucursal,
-          estado: formEstado,
-        }
+        const data: ICreateUsuarioRequest = { username: formUsername, password: formPassword, nombreCompleto: formNombre, email: formEmail, rolCod: formRol as 1 | 2 | 3 | 4, sucursalId: formSucursal, estado: formEstado }
         const created = await createUsuario(data)
         setUsuarios((prev) => [...prev, created])
       }
@@ -180,30 +237,22 @@ export function AdminPage() {
     }
   }, [editingUser, formNombre, formUsername, formPassword, formEmail, formRol, formSucursal, formEstado])
 
-  // Activar/desactivar usuario
   const handleToggleEstado = useCallback((user: IUsuarioAdmin) => {
     if (user.estado === 1) {
-      // Desactivar requiere confirmación
       setUserToToggle(user)
       setShowDesactivarConfirm(true)
     } else {
-      // Activar directamente
       toggleEstadoUsuario(user.id, 1)
-        .then((updated) => {
-          setUsuarios((prev) => prev.map((u) => (u.id === updated.id ? updated : u)))
-        })
+        .then((updated) => setUsuarios((prev) => prev.map((u) => (u.id === updated.id ? updated : u))))
         .catch((e: Error) => setError(e.message))
     }
   }, [])
 
-  // Confirmar desactivación — ADR-010: onClose(action: string | undefined)
   const handleDesactivarConfirm = useCallback((action: string | undefined) => {
     setShowDesactivarConfirm(false)
     if (action === 'OK' && userToToggle) {
       toggleEstadoUsuario(userToToggle.id, 2)
-        .then((updated) => {
-          setUsuarios((prev) => prev.map((u) => (u.id === updated.id ? updated : u)))
-        })
+        .then((updated) => setUsuarios((prev) => prev.map((u) => (u.id === updated.id ? updated : u))))
         .catch((e: Error) => setError(e.message))
     }
     setUserToToggle(null)
@@ -212,25 +261,9 @@ export function AdminPage() {
   return (
     <div style={{ display: 'flex', height: '100%' }}>
       {/* Menú lateral */}
-      <nav
-        style={{
-          width: '200px',
-          borderRight: '1px solid var(--sapGroup_TitleBorderColor, #d9d9d9)',
-          padding: '1rem 0.5rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.5rem',
-        }}
-        aria-label="Menú de Administración"
-      >
+      <nav style={{ width: '200px', borderRight: '1px solid var(--sapGroup_TitleBorderColor, #d9d9d9)', padding: '1rem 0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }} aria-label="Menú de Administración">
         {MENU_ADMIN.map((item) => (
-          <Button
-            key={item.id}
-            icon={item.icon}
-            design={tabActiva === item.id ? 'Emphasized' : 'Default'}
-            onClick={() => setTabActiva(item.id)}
-            style={{ width: '100%', justifyContent: 'flex-start' }}
-          >
+          <Button key={item.id} icon={item.icon} design={tabActiva === item.id ? 'Emphasized' : 'Default'} onClick={() => setTabActiva(item.id)} style={{ width: '100%', justifyContent: 'flex-start' }}>
             {item.label}
           </Button>
         ))}
@@ -238,62 +271,30 @@ export function AdminPage() {
 
       {/* Contenido principal */}
       <main style={{ flex: 1, padding: '1rem', overflow: 'auto' }}>
-        {error && (
-          <MessageStrip design="Negative" style={{ marginBottom: '1rem' }}>
-            {error}
-          </MessageStrip>
-        )}
+        {error && <MessageStrip design="Negative" style={{ marginBottom: '1rem' }}>{error}</MessageStrip>}
 
         <BusyIndicator active={isLoading} style={{ width: '100%' }}>
+
           {/* ============= TAB USUARIOS ============= */}
           {tabActiva === 'usuarios' && (
             <div style={{ display: 'grid', gap: '1rem' }}>
               <FlexBox justifyContent="SpaceBetween" alignItems="Center">
                 <Title level="H3">Gestión de Usuarios</Title>
-                <Button icon="add-employee" design="Emphasized" onClick={handleNuevoUsuario}>
-                  Nuevo Usuario
-                </Button>
+                <Button icon="add-employee" design="Emphasized" onClick={handleNuevoUsuario}>Nuevo Usuario</Button>
               </FlexBox>
-
-              <Table headerRow={
-                <TableHeaderRow>
-                  <TableHeaderCell>Usuario</TableHeaderCell>
-                  <TableHeaderCell>Nombre Completo</TableHeaderCell>
-                  <TableHeaderCell>Email</TableHeaderCell>
-                  <TableHeaderCell>Rol</TableHeaderCell>
-                  <TableHeaderCell>Sucursal</TableHeaderCell>
-                  <TableHeaderCell>Estado</TableHeaderCell>
-                  <TableHeaderCell>Acciones</TableHeaderCell>
-                </TableHeaderRow>
-              }>
+              <Table headerRow={<TableHeaderRow><TableHeaderCell>Usuario</TableHeaderCell><TableHeaderCell>Nombre Completo</TableHeaderCell><TableHeaderCell>Email</TableHeaderCell><TableHeaderCell>Rol</TableHeaderCell><TableHeaderCell>Sucursal</TableHeaderCell><TableHeaderCell>Estado</TableHeaderCell><TableHeaderCell>Acciones</TableHeaderCell></TableHeaderRow>}>
                 {usuarios.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>{user.username}</TableCell>
                     <TableCell>{user.nombreCompleto}</TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Tag colorScheme={rolDesign(user.rolCod)}>{user.rolNombre}</Tag>
-                    </TableCell>
+                    <TableCell><Tag colorScheme={rolDesign(user.rolCod)}>{user.rolNombre}</Tag></TableCell>
                     <TableCell>{user.sucursalNombre}</TableCell>
-                    <TableCell>
-                      <Tag colorScheme={user.estado === 1 ? '8' : '1'}>
-                        {user.estado === 1 ? 'Activo' : 'Inactivo'}
-                      </Tag>
-                    </TableCell>
+                    <TableCell><Tag colorScheme={user.estado === 1 ? '8' : '1'}>{user.estado === 1 ? 'Activo' : 'Inactivo'}</Tag></TableCell>
                     <TableCell>
                       <FlexBox style={{ gap: '0.25rem' }}>
-                        <Button
-                          icon="edit"
-                          design="Transparent"
-                          tooltip="Editar usuario"
-                          onClick={() => handleEditarUsuario(user)}
-                        />
-                        <Button
-                          icon={user.estado === 1 ? 'decline' : 'activate'}
-                          design="Transparent"
-                          tooltip={user.estado === 1 ? 'Desactivar' : 'Activar'}
-                          onClick={() => handleToggleEstado(user)}
-                        />
+                        <Button icon="edit" design="Transparent" tooltip="Editar usuario" onClick={() => handleEditarUsuario(user)} />
+                        <Button icon={user.estado === 1 ? 'decline' : 'activate'} design="Transparent" tooltip={user.estado === 1 ? 'Desactivar' : 'Activar'} onClick={() => handleToggleEstado(user)} />
                       </FlexBox>
                     </TableCell>
                   </TableRow>
@@ -306,17 +307,7 @@ export function AdminPage() {
           {tabActiva === 'roles' && (
             <div style={{ display: 'grid', gap: '1rem' }}>
               <Title level="H3">Roles del Sistema</Title>
-
-              <Table headerRow={
-                <TableHeaderRow>
-                  <TableHeaderCell>Código</TableHeaderCell>
-                  <TableHeaderCell>Nombre</TableHeaderCell>
-                  <TableHeaderCell>Administración</TableHeaderCell>
-                  <TableHeaderCell>Pedidos</TableHeaderCell>
-                  <TableHeaderCell>Caja</TableHeaderCell>
-                  <TableHeaderCell>Descripción</TableHeaderCell>
-                </TableHeaderRow>
-              }>
+              <Table headerRow={<TableHeaderRow><TableHeaderCell>Código</TableHeaderCell><TableHeaderCell>Nombre</TableHeaderCell><TableHeaderCell>Administración</TableHeaderCell><TableHeaderCell>Pedidos</TableHeaderCell><TableHeaderCell>Caja</TableHeaderCell><TableHeaderCell>Descripción</TableHeaderCell></TableHeaderRow>}>
                 {roles.map((rol) => (
                   <TableRow key={rol.codigo}>
                     <TableCell>{rol.codigo}</TableCell>
@@ -328,10 +319,7 @@ export function AdminPage() {
                   </TableRow>
                 ))}
               </Table>
-
-              <MessageStrip design="Information" hideCloseButton>
-                Los roles son fijos del sistema. No se pueden crear ni modificar.
-              </MessageStrip>
+              <MessageStrip design="Information" hideCloseButton>Los roles son fijos del sistema. No se pueden crear ni modificar.</MessageStrip>
             </div>
           )}
 
@@ -339,15 +327,7 @@ export function AdminPage() {
           {tabActiva === 'sucursales' && (
             <div style={{ display: 'grid', gap: '1rem' }}>
               <Title level="H3">Sucursales</Title>
-
-              <Table headerRow={
-                <TableHeaderRow>
-                  <TableHeaderCell>Código</TableHeaderCell>
-                  <TableHeaderCell>Nombre</TableHeaderCell>
-                  <TableHeaderCell>Sociedad</TableHeaderCell>
-                  <TableHeaderCell>Oficina de Ventas</TableHeaderCell>
-                </TableHeaderRow>
-              }>
+              <Table headerRow={<TableHeaderRow><TableHeaderCell>Código</TableHeaderCell><TableHeaderCell>Nombre</TableHeaderCell><TableHeaderCell>Sociedad</TableHeaderCell><TableHeaderCell>Oficina de Ventas</TableHeaderCell></TableHeaderRow>}>
                 {sucursales.map((suc) => (
                   <TableRow key={suc.codigo}>
                     <TableCell>{suc.codigo}</TableCell>
@@ -357,136 +337,224 @@ export function AdminPage() {
                   </TableRow>
                 ))}
               </Table>
+              <MessageStrip design="Information" hideCloseButton>Las sucursales se gestionan desde SAP S/4HANA.</MessageStrip>
+            </div>
+          )}
 
+          {/* ============= TAB INTERFASES ============= */}
+          {tabActiva === 'interfases' && (
+            <div style={{ display: 'grid', gap: '1rem' }}>
+              <Title level="H3">Interfases SAP</Title>
+
+              {/* Filtros */}
+              <FlexBox style={{ gap: '1rem', flexWrap: 'wrap' }} alignItems="End">
+                <div>
+                  <Label>Desde</Label>
+                  <Input
+                    type="Date"
+                    value={filtroDesde}
+                    onInput={(e) => setFiltroDesde((e.target as unknown as InputDomRef).value)}
+                  />
+                </div>
+                <div>
+                  <Label>Hasta</Label>
+                  <Input
+                    type="Date"
+                    value={filtroHasta}
+                    onInput={(e) => setFiltroHasta((e.target as unknown as InputDomRef).value)}
+                  />
+                </div>
+                <div>
+                  <Label>Tipo de carga</Label>
+                  <Select key={filtroTipo === '' ? 'reset' : 'active'} onChange={(e) => setFiltroTipo(e.detail.selectedOption?.getAttribute('data-id') ?? '')}>
+                    <Option data-id="">Todos</Option>
+                    {Object.entries(TIPOS_INTERFAZ).map(([key, val]) => (
+                      <Option key={key} data-id={key}>{val}</Option>
+                    ))}
+                  </Select>
+                </div>
+                <Button design="Emphasized" onClick={handleFiltrarInterfases}>Buscar</Button>
+                <Button design="Default" onClick={() => { setFiltroDesde(''); setFiltroHasta(''); setFiltroTipo(''); getInterfases().then(setInterfases).catch((e: Error) => setError(e.message)) }}>Limpiar</Button>
+              </FlexBox>
+
+              <Table headerRow={
+                <TableHeaderRow>
+                  <TableHeaderCell>ID</TableHeaderCell>
+                  <TableHeaderCell>Tipo</TableHeaderCell>
+                  <TableHeaderCell>Fecha Inicio</TableHeaderCell>
+                  <TableHeaderCell>Fecha Término</TableHeaderCell>
+                  <TableHeaderCell>Cant. Registros</TableHeaderCell>
+                  <TableHeaderCell>Estado</TableHeaderCell>
+                  <TableHeaderCell>Observación</TableHeaderCell>
+                </TableHeaderRow>
+              }>
+                {interfases.map((i) => (
+                  <TableRow key={i.id}>
+                    <TableCell>{i.id}</TableCell>
+                    <TableCell>{i.nombre ?? '—'}</TableCell>
+                    <TableCell>{formatFecha(i.fechaInicio)}</TableCell>
+                    <TableCell>{formatFecha(i.fechaTermino)}</TableCell>
+                    <TableCell>{i.cantActualiza ?? 0}</TableCell>
+                    <TableCell>
+                      <Tag colorScheme={i.estado === 'Okey' ? '8' : '1'}>{i.estado ?? '—'}</Tag>
+                    </TableCell>
+                    <TableCell>{i.observacion ?? '—'}</TableCell>
+                  </TableRow>
+                ))}
+              </Table>
               <MessageStrip design="Information" hideCloseButton>
-                Las sucursales se gestionan desde SAP S/4HANA.
+                Solo lectura. Los registros son generados automáticamente por los procesos de sincronización SAP.
               </MessageStrip>
             </div>
           )}
+
+          {/* ============= TAB TABLAS SAP ============= */}
+          {tabActiva === 'tablas-sap' && (
+            <div style={{ display: 'grid', gap: '1rem' }}>
+              <Title level="H3">Tablas Maestras SAP</Title>
+
+              {/* Submenú SAP */}
+              <FlexBox style={{ gap: '0.5rem', borderBottom: '1px solid var(--sapGroup_TitleBorderColor)', paddingBottom: '0.5rem' }}>
+                {(['bancos', 'centros', 'centros-costo', 'sociedades'] as TabSap[]).map((tab) => (
+                  <Button key={tab} design={tabSap === tab ? 'Emphasized' : 'Default'} onClick={() => setTabSap(tab)}>
+                    {tab === 'bancos' ? 'Bancos' : tab === 'centros' ? 'Centros' : tab === 'centros-costo' ? 'Centros de Costo' : 'Sociedades'}
+                  </Button>
+                ))}
+              </FlexBox>
+
+              {/* Buscador */}
+              <FlexBox style={{ gap: '0.5rem' }} alignItems="End">
+                <Input
+                  placeholder="Buscar..."
+                  value={searchSap}
+                  onInput={(e) => setSearchSap((e.target as unknown as InputDomRef).value)}
+                  style={{ width: '300px' }}
+                />
+                <Button design="Emphasized" onClick={handleBuscarSap}>Buscar</Button>
+                <Button design="Default" onClick={() => {
+                  setSearchSap('');
+                  if (tabSap === 'bancos') getSapBancos().then(setBancos)
+                  else if (tabSap === 'centros') getSapCentros().then(setCentros)
+                  else if (tabSap === 'centros-costo') getSapCentrosCosto().then(setCentrosCosto)
+                  else if (tabSap === 'sociedades') getSapSociedades().then(setSociedades)
+                }}>Limpiar</Button>
+              </FlexBox>
+
+              {/* Tabla Bancos */}
+              {tabSap === 'bancos' && (
+                <Table headerRow={<TableHeaderRow><TableHeaderCell>País</TableHeaderCell><TableHeaderCell>Clave Banco</TableHeaderCell><TableHeaderCell>Nombre</TableHeaderCell><TableHeaderCell>Ciudad</TableHeaderCell><TableHeaderCell>SWIFT</TableHeaderCell></TableHeaderRow>}>
+                  {bancos.map((b) => (
+                    <TableRow key={b.id}>
+                      <TableCell>{b.BankCountry}</TableCell>
+                      <TableCell>{b.BankKey}</TableCell>
+                      <TableCell>{b.BankName}</TableCell>
+                      <TableCell>{b.City}</TableCell>
+                      <TableCell>{b.SwiftCode || '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </Table>
+              )}
+
+              {/* Tabla Centros */}
+              {tabSap === 'centros' && (
+                <Table headerRow={<TableHeaderRow><TableHeaderCell>Código</TableHeaderCell><TableHeaderCell>Nombre</TableHeaderCell><TableHeaderCell>Org. Ventas</TableHeaderCell><TableHeaderCell>Archivado</TableHeaderCell></TableHeaderRow>}>
+                  {centros.map((c) => (
+                    <TableRow key={c.id}>
+                      <TableCell>{c.Plant}</TableCell>
+                      <TableCell>{c.PlantName}</TableCell>
+                      <TableCell>{c.SalesOrganization || '—'}</TableCell>
+                      <TableCell><Tag colorScheme={c.IsMarkedForArchiving ? '1' : '8'}>{c.IsMarkedForArchiving ? 'Sí' : 'No'}</Tag></TableCell>
+                    </TableRow>
+                  ))}
+                </Table>
+              )}
+
+              {/* Tabla Centros de Costo */}
+              {tabSap === 'centros-costo' && (
+                <Table headerRow={<TableHeaderRow><TableHeaderCell>Área Control</TableHeaderCell><TableHeaderCell>Centro Costo</TableHeaderCell><TableHeaderCell>Empresa</TableHeaderCell><TableHeaderCell>Depto.</TableHeaderCell><TableHeaderCell>Bloqueado</TableHeaderCell></TableHeaderRow>}>
+                  {centrosCosto.length === 0
+                    ? <TableRow><TableCell>Sin datos disponibles</TableCell><TableCell>—</TableCell><TableCell>—</TableCell><TableCell>—</TableCell><TableCell>—</TableCell></TableRow>
+                    : centrosCosto.map((cc) => (
+                      <TableRow key={cc.id}>
+                        <TableCell>{cc.ControllingArea}</TableCell>
+                        <TableCell>{cc.CostCenter}</TableCell>
+                        <TableCell>{cc.CompanyCode}</TableCell>
+                        <TableCell>{cc.Department || '—'}</TableCell>
+                        <TableCell><Tag colorScheme={cc.IsBlocked ? '1' : '8'}>{cc.IsBlocked ? 'Sí' : 'No'}</Tag></TableCell>
+                      </TableRow>
+                    ))
+                  }
+                </Table>
+              )}
+
+              {/* Tabla Sociedades */}
+              {tabSap === 'sociedades' && (
+                <Table headerRow={<TableHeaderRow><TableHeaderCell>Código</TableHeaderCell><TableHeaderCell>Nombre</TableHeaderCell><TableHeaderCell>Ciudad</TableHeaderCell><TableHeaderCell>País</TableHeaderCell><TableHeaderCell>Moneda</TableHeaderCell></TableHeaderRow>}>
+                  {sociedades.map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell>{s.CompanyCode}</TableCell>
+                      <TableCell>{s.CompanyCodeName}</TableCell>
+                      <TableCell>{s.CityName}</TableCell>
+                      <TableCell>{s.Country}</TableCell>
+                      <TableCell>{s.Currency}</TableCell>
+                    </TableRow>
+                  ))}
+                </Table>
+              )}
+
+              <MessageStrip design="Information" hideCloseButton>
+                Solo lectura. Datos sincronizados desde SAP S/4HANA.
+              </MessageStrip>
+            </div>
+          )}
+
         </BusyIndicator>
 
         {/* Modal crear/editar usuario */}
-        <Dialog
-          open={showModal}
-          headerText={editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
-          onClose={() => setShowModal(false)}
+        <Dialog open={showModal} headerText={editingUser ? 'Editar Usuario' : 'Nuevo Usuario'} onClose={() => setShowModal(false)}
           footer={
             <FlexBox justifyContent="End" style={{ padding: '0.5rem', gap: '0.5rem', width: '100%' }}>
-              <Button design="Transparent" onClick={() => setShowModal(false)} disabled={isSaving}>
-                Cancelar
-              </Button>
-              <Button design="Emphasized" onClick={handleGuardar} disabled={isSaving}>
-                {isSaving ? 'Guardando...' : 'Guardar'}
-              </Button>
+              <Button design="Transparent" onClick={() => setShowModal(false)} disabled={isSaving}>Cancelar</Button>
+              <Button design="Emphasized" onClick={handleGuardar} disabled={isSaving}>{isSaving ? 'Guardando...' : 'Guardar'}</Button>
             </FlexBox>
           }
         >
           <Form style={{ padding: '1rem' }}>
-            {formError && (
-              <FormItem>
-                <MessageStrip design="Negative">{formError}</MessageStrip>
-              </FormItem>
-            )}
-
-            <FormItem>
-              <Label>Nombre Completo *</Label>
-              <Input
-                value={formNombre}
-                onInput={(e) => setFormNombre((e.target as unknown as InputDomRef).value)}
-                placeholder="Nombre y apellido"
-              />
-            </FormItem>
-
-            <FormItem>
-              <Label>Usuario (login) *</Label>
-              <Input
-                value={formUsername}
-                onInput={(e) => setFormUsername((e.target as unknown as InputDomRef).value)}
-                placeholder="nombre de usuario"
-                disabled={!!editingUser}
-              />
-            </FormItem>
-
-            {!editingUser && (
-              <FormItem>
-                <Label>Contraseña *</Label>
-                <Input
-                  type="Password"
-                  value={formPassword}
-                  onInput={(e) => setFormPassword((e.target as unknown as InputDomRef).value)}
-                  placeholder="contraseña"
-                />
-              </FormItem>
-            )}
-
-            <FormItem>
-              <Label>Email</Label>
-              <Input
-                value={formEmail}
-                onInput={(e) => setFormEmail((e.target as unknown as InputDomRef).value)}
-                placeholder="email@cooprinsem.cl"
-              />
-            </FormItem>
-
+            {formError && <FormItem><MessageStrip design="Negative">{formError}</MessageStrip></FormItem>}
+            <FormItem><Label>Nombre Completo *</Label><Input value={formNombre} onInput={(e) => setFormNombre((e.target as unknown as InputDomRef).value)} placeholder="Nombre y apellido" /></FormItem>
+            <FormItem><Label>Usuario (login) *</Label><Input value={formUsername} onInput={(e) => setFormUsername((e.target as unknown as InputDomRef).value)} placeholder="nombre de usuario" disabled={!!editingUser} /></FormItem>
+            {!editingUser && <FormItem><Label>Contraseña *</Label><Input type="Password" value={formPassword} onInput={(e) => setFormPassword((e.target as unknown as InputDomRef).value)} placeholder="contraseña" /></FormItem>}
+            <FormItem><Label>Email</Label><Input value={formEmail} onInput={(e) => setFormEmail((e.target as unknown as InputDomRef).value)} placeholder="email@cooprinsem.cl" /></FormItem>
             <FormItem>
               <Label>Rol</Label>
-              <Select
-                onChange={(e) => {
-                  const val = Number(e.detail.selectedOption?.getAttribute('data-id'))
-                  if (val >= 1 && val <= 4) setFormRol(val as 1 | 2 | 3 | 4)
-                }}
-              >
+              <Select onChange={(e) => { const val = Number(e.detail.selectedOption?.getAttribute('data-id')); if (val >= 1 && val <= 4) setFormRol(val as 1 | 2 | 3 | 4) }}>
                 <Option data-id="1" selected={formRol === 1}>Administrador</Option>
                 <Option data-id="2" selected={formRol === 2}>Ventas</Option>
                 <Option data-id="3" selected={formRol === 3}>Caja</Option>
                 <Option data-id="4" selected={formRol === 4}>Consultas</Option>
               </Select>
             </FormItem>
-
             <FormItem>
               <Label>Sucursal</Label>
-              <Select
-                onChange={(e) => {
-                  const val = e.detail.selectedOption?.getAttribute('data-id')
-                  if (val) setFormSucursal(val)
-                }}
-              >
+              <Select onChange={(e) => { const val = e.detail.selectedOption?.getAttribute('data-id'); if (val) setFormSucursal(val) }}>
                 <Option data-id="D190" selected={formSucursal === 'D190'}>D190 — Osorno</Option>
                 <Option data-id="D052" selected={formSucursal === 'D052'}>D052 — Puerto Montt</Option>
                 <Option data-id="D014" selected={formSucursal === 'D014'}>D014 — Temuco</Option>
               </Select>
             </FormItem>
-
             <FormItem>
               <Label>Estado</Label>
-              <Select
-                onChange={(e) => {
-                  const val = Number(e.detail.selectedOption?.getAttribute('data-id'))
-                  if (val === 1 || val === 2) setFormEstado(val)
-                }}
-              >
+              <Select onChange={(e) => { const val = Number(e.detail.selectedOption?.getAttribute('data-id')); if (val === 1 || val === 2) setFormEstado(val) }}>
                 <Option data-id="1" selected={formEstado === 1}>Activo</Option>
                 <Option data-id="2" selected={formEstado === 2}>Inactivo</Option>
               </Select>
             </FormItem>
-
-            {editingUser && (
-              <FormItem>
-                <Label style={{ fontStyle: 'italic', color: 'var(--sapNeutralColor)' }}>
-                  El usuario y contraseña no se pueden modificar desde aquí.
-                </Label>
-              </FormItem>
-            )}
+            {editingUser && <FormItem><Label style={{ fontStyle: 'italic', color: 'var(--sapNeutralColor)' }}>El usuario y contraseña no se pueden modificar desde aquí.</Label></FormItem>}
           </Form>
         </Dialog>
 
-        {/* Confirmación desactivar usuario — ADR-010 */}
         {showDesactivarConfirm && userToToggle && (
-          <MessageBox
-            type="Confirm"
-            open
-            onClose={handleDesactivarConfirm}
-          >
+          <MessageBox type="Confirm" open onClose={handleDesactivarConfirm}>
             ¿Desactivar al usuario {userToToggle.nombreCompleto}? No podrá iniciar sesión.
           </MessageBox>
         )}

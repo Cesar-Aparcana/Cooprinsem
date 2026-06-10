@@ -90,3 +90,21 @@ export async function getSucursales(): Promise<ISucursal[]> {
   const json = await res.json()
   return json.d.results as ISucursal[]
 }
+
+// Centros de un usuario
+export async function getCentrosUsuario(username: string): Promise<string[]> {
+  const res = await fetch(`${API_BASE_URL}/api/admin/usuarios/${username}/centros`)
+  if (!res.ok) throw new Error(`Error al cargar centros: ${res.status}`)
+  const json = await res.json()
+  return json.d.results as string[]
+}
+
+// Asignar centros a un usuario
+export async function setCentrosUsuario(username: string, centros: string[]): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/admin/usuarios/${username}/centros`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ centros }),
+  })
+  if (!res.ok) throw new Error(`Error al asignar centros: ${res.status}`)
+}

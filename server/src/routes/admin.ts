@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { asyncHandler } from '../middleware/errorHandler';
 
 const router = Router();
 
@@ -109,4 +110,44 @@ router.get('/sucursales', (_req: Request, res: Response) => {
   res.json({ d: { results: SUCURSALES_MOCK } });
 });
 
+// GET /api/admin/usuarios/:username/centros — obtener centros de un usuario
+router.get('/usuarios/:username/centros', asyncHandler(async (req: Request, res: Response) => {
+  const { username } = req.params;
+  const { Pool } = await import('pg');
+  const pool = new Pool({ connectionString: process.env['DATABASE_URL'] });
+
+  try {
+    const result = await pool.query(
+      'SELECT plant FROM usuario_centros WHERE username = $1',
+      [username]
+    );
+    res.json({ d: { results: result.rows.map((r: { plant: string }) => r.plant) } });
+  } finally {
+    await pool.end();
+  }
+}));
+
+// POST /api/admin/usuarios/:username/centros — asignar centros a un usuario
+router.post('/usuarios/:username/centros', asyncHandler(async (req: Request, res: Response) => {
+  const { username } = req.params;
+  const { centros } = req.body as { centros: string[] };
+  const { Pool } = await import('pg');
+  const pool = new Pool({ connectionString: process.env['DATABASE_URL'] });
+
+  try {
+    await pool.query('DELETE FROM usuario_centros WHERE username = $1', [username]);
+
+    if (centros && centros.length > 0) {
+      const values = centros.map((plant: string, i: number) => `($1, $${i + 2})`).join(', ');
+      await pool.query(
+        `INSERT INTO usuario_centros (username, plant) VALUES ${values}`,
+        [username, ...centros]
+      );
+    }
+
+    res.json({ d: { message: 'Centros actualizados', total: centros?.length ?? 0 } });
+  } finally {
+    await pool.end();
+  }
+}));
 export default router;

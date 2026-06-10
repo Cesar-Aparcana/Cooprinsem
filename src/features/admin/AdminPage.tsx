@@ -32,7 +32,7 @@ import '@ui5/webcomponents-icons/dist/connected.js'
 import '@ui5/webcomponents-icons/dist/database.js'
 import type { IUsuarioAdmin, ICreateUsuarioRequest, IUpdateUsuarioRequest, IRol, ISucursal } from '@/types/admin'
 import type { IInterfaz, ISapBanco, ISapCentro, ISapCentroCosto, ISapSociedad } from '@/types/sapMaestro'
-import { getUsuarios, createUsuario, updateUsuario, toggleEstadoUsuario, getRoles, getSucursales } from '@/services/api/admin'
+import { getUsuarios, createUsuario, updateUsuario, toggleEstadoUsuario, getRoles, getSucursales, getCentrosUsuario, setCentrosUsuario } from '@/services/api/admin'
 import { getInterfases, getSapBancos, getSapCentros, getSapCentrosCosto, getSapSociedades } from '@/services/api/sapMaestro'
 
 type TabActiva = 'usuarios' | 'roles' | 'sucursales' | 'interfases' | 'tablas-sap'
@@ -86,6 +86,8 @@ export function AdminPage() {
   const [formRol, setFormRol] = useState<1 | 2 | 3 | 4>(1)
   const [formSucursal, setFormSucursal] = useState('D190')
   const [formEstado, setFormEstado] = useState<1 | 2>(1)
+  const [todosCentros, setTodosCentros] = useState<ISapCentro[]>([])
+  const [centrosSeleccionados, setCentrosSeleccionados] = useState<string[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [showDesactivarConfirm, setShowDesactivarConfirm] = useState(false)
@@ -195,6 +197,8 @@ export function AdminPage() {
     setFormSucursal('D190')
     setFormEstado(1)
     setFormError(null)
+    setCentrosSeleccionados([])
+    getSapCentros().then(setTodosCentros).catch(() => { })
     setShowModal(true)
   }, [])
 
@@ -208,6 +212,9 @@ export function AdminPage() {
     setFormSucursal(user.sucursalId)
     setFormEstado(user.estado)
     setFormError(null)
+    setCentrosSeleccionados([])
+    getSapCentros().then(setTodosCentros).catch(() => { })
+    getCentrosUsuario(user.username).then(setCentrosSeleccionados).catch(() => { })
     setShowModal(true)
   }, [])
 
@@ -220,22 +227,26 @@ export function AdminPage() {
     setFormError(null)
 
     try {
+      let usernameGuardado = ''
       if (editingUser) {
         const data: IUpdateUsuarioRequest = { nombreCompleto: formNombre, email: formEmail, rolCod: formRol as 1 | 2 | 3 | 4, sucursalId: formSucursal, estado: formEstado }
         const updated = await updateUsuario(editingUser.id, data)
         setUsuarios((prev) => prev.map((u) => (u.id === updated.id ? updated : u)))
+        usernameGuardado = editingUser.username
       } else {
         const data: ICreateUsuarioRequest = { username: formUsername, password: formPassword, nombreCompleto: formNombre, email: formEmail, rolCod: formRol as 1 | 2 | 3 | 4, sucursalId: formSucursal, estado: formEstado }
         const created = await createUsuario(data)
         setUsuarios((prev) => [...prev, created])
+        usernameGuardado = formUsername
       }
+      await setCentrosUsuario(usernameGuardado, centrosSeleccionados)
       setShowModal(false)
     } catch (e: unknown) {
       setFormError(e instanceof Error ? e.message : 'Error al guardar usuario')
     } finally {
       setIsSaving(false)
     }
-  }, [editingUser, formNombre, formUsername, formPassword, formEmail, formRol, formSucursal, formEstado])
+  }, [editingUser, formNombre, formUsername, formPassword, formEmail, formRol, formSucursal, formEstado, centrosSeleccionados])
 
   const handleToggleEstado = useCallback((user: IUsuarioAdmin) => {
     if (user.estado === 1) {
@@ -379,12 +390,12 @@ export function AdminPage() {
 
               <Table headerRow={
                 <TableHeaderRow>
-                  <TableHeaderCell>ID</TableHeaderCell>
-                  <TableHeaderCell>Tipo</TableHeaderCell>
-                  <TableHeaderCell>Fecha Inicio</TableHeaderCell>
-                  <TableHeaderCell>Fecha Término</TableHeaderCell>
-                  <TableHeaderCell>Cant. Registros</TableHeaderCell>
-                  <TableHeaderCell>Estado</TableHeaderCell>
+                  <TableHeaderCell style={{ width: '60px' }}>ID</TableHeaderCell>
+                  <TableHeaderCell style={{ width: '160px' }}>Tipo</TableHeaderCell>
+                  <TableHeaderCell style={{ width: '180px' }}>Fecha Inicio</TableHeaderCell>
+                  <TableHeaderCell style={{ width: '180px' }}>Fecha Término</TableHeaderCell>
+                  <TableHeaderCell style={{ width: '120px' }}>Cant. Registros</TableHeaderCell>
+                  <TableHeaderCell style={{ width: '80px' }}>Estado</TableHeaderCell>
                   <TableHeaderCell>Observación</TableHeaderCell>
                 </TableHeaderRow>
               }>
@@ -548,6 +559,34 @@ export function AdminPage() {
                 <Option data-id="1" selected={formEstado === 1}>Activo</Option>
                 <Option data-id="2" selected={formEstado === 2}>Inactivo</Option>
               </Select>
+            </FormItem>
+            <FormItem>
+              <Label>Centros asignados</Label>
+              <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--sapField_BorderColor)', borderRadius: '4px', padding: '0.5rem', width: '100%' }}>
+                {todosCentros.length === 0 ? (
+                  <span style={{ color: 'var(--sapNeutralColor)', fontSize: '0.875rem' }}>Cargando centros...</span>
+                ) : (
+                  todosCentros.map((centro) => (
+                    <div key={centro.Plant} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.25rem 0' }}>
+                      <input
+                        type="checkbox"
+                        id={`centro-${centro.Plant}`}
+                        checked={centrosSeleccionados.includes(centro.Plant)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setCentrosSeleccionados((prev) => [...prev, centro.Plant])
+                          } else {
+                            setCentrosSeleccionados((prev) => prev.filter((p) => p !== centro.Plant))
+                          }
+                        }}
+                      />
+                      <label htmlFor={`centro-${centro.Plant}`} style={{ cursor: 'pointer', fontSize: '0.875rem' }}>
+                        {centro.Plant} — {centro.PlantName}
+                      </label>
+                    </div>
+                  ))
+                )}
+              </div>
             </FormItem>
             {editingUser && <FormItem><Label style={{ fontStyle: 'italic', color: 'var(--sapNeutralColor)' }}>El usuario y contraseña no se pueden modificar desde aquí.</Label></FormItem>}
           </Form>

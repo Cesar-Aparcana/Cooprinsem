@@ -24,8 +24,8 @@ export function MainLayout() {
 
   // Rol 3 (Caja) solo ve Caja; Rol 2 (Ventas) solo ve Pedidos; Admin ve ambos
   const showPedidos = usuario.rolCod !== ROLES.CAJA
-  const showCaja = usuario.rolCod !== ROLES.VENTAS
-  const showAdmin = usuario.rolCod === ROLES.ADMINISTRADOR
+  const showCaja    = usuario.rolCod !== ROLES.VENTAS
+  const showAdmin   = usuario.rolCod === ROLES.ADMINISTRADOR
 
   function handleLogout() {
     setUsuario(null)
@@ -35,7 +35,14 @@ export function MainLayout() {
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <ShellBar
-        logo={<img slot="logo" src="/logo-cooprinsem.png" alt="Cooprinsem POS" style={{ height: '32px', width: 'auto', cursor: 'pointer', objectFit: 'contain' }} />}
+        logo={
+          <img
+            slot="logo"
+            src="/logo-cooprinsem.png"
+            alt="Cooprinsem POS"
+            style={{ height: '32px', width: 'auto', cursor: 'pointer', objectFit: 'contain' }}
+          />
+        }
         onLogoClick={() => navigate('/home')}
       >
         {showPedidos && (

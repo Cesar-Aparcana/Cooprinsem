@@ -12,6 +12,7 @@ export interface SapClienteResult {
   BusinessPartnerName2:    string;  // Nombre 2
   SearchTerm1:             string;  // Concepto búsqueda
   Industry:                string;  // Giro
+  TaxNumber1:              string;  // RUT completo con guión (ej: 10009114-3)
 }
 
 /**

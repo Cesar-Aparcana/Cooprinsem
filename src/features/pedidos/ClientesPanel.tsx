@@ -34,6 +34,26 @@ import type { ICliente, ICrearCliente } from '@/types/cliente'
 
 type SubTab = 'buscar' | 'crear' | 'ficha'
 
+// Mapa de código SAP de región → nombre de región en Chile
+const CODIGO_REGION_SAP: Record<string, string> = {
+  '01': 'I- Tarapacá',
+  '02': 'II- Antofagasta',
+  '03': 'III- Atacama',
+  '04': 'IV- Coquimbo',
+  '05': 'V- Valparaíso',
+  '06': 'VI- O\'Higgins',
+  '07': 'VII- Maule',
+  '08': 'VIII- Biobío',
+  '09': 'IX- La Araucanía',
+  '10': 'X- De los Lagos',
+  '11': 'XI- Aysén',
+  '12': 'XII- Magallanes',
+  '13': 'RM- Metropolitana',
+  '14': 'XIV- Los Ríos',
+  '15': 'XV- Arica y Parinacota',
+  '16': 'XVI- Ñuble',
+}
+
 // Regiones de Chile para el select
 const REGIONES_CHILE = [
   'XV- Arica y Parinacota', 'I- Tarapacá', 'II- Antofagasta', 'III- Atacama',
@@ -143,15 +163,18 @@ export function ClientesPanel() {
       const esNumero = /^\d+$/.test(termino)
 
       if (esRut) {
+        // Normalizar RUT: quitar puntos, dejar solo números y guión
+        // Así acepta formatos: 10009114-3, 10.009.114-3, 100091143
+        const rutNormalizado = termino.replace(/\./g, '').replace(/[^0-9kK-]/gi, '')
         // Buscar por RUT en SAP
-        const resultadosSap = await buscarSapClientePorRut(termino)
+        const resultadosSap = await buscarSapClientePorRut(rutNormalizado)
         if (resultadosSap.length > 0) {
           // Mapear resultado SAP al formato ICliente del panel
           const sap = resultadosSap[0]
           setClienteBuscado({
             codigoCliente: sap.BusinessPartner,
             nombre: sap.BusinessPartnerFullName || sap.BusinessPartnerName,
-            rut: termino,
+            rut: rutNormalizado,
             condicionPago: '',
             estadoCredito: 'AL_DIA',
             creditoAsignado: 0,
@@ -159,8 +182,14 @@ export function ClientesPanel() {
             porcentajeAgotamiento: 0,
             sucursal: '',
             giro: sap.Industry,
-            conceptoBusqueda: sap.SearchTerm1,
+            conceptoBusqueda: '',
+            direccion: (sap as any).direccion?.StreetName ?? '',
+            ciudad: (sap as any).direccion?.CityName ?? '',
+            region: CODIGO_REGION_SAP[(sap as any).direccion?.Region ?? ''] ?? (sap as any).direccion?.Region ?? '',
+            telefono: (sap as any).direccion?.PhoneNumber ?? '',
+            celular: (sap as any).direccion?.MobilePhoneNumber ?? '',
           })
+          setBuscarLoading(false)
           return
         }
       } else if (esNumero) {
@@ -169,7 +198,7 @@ export function ClientesPanel() {
         setClienteBuscado({
           codigoCliente: sap.BusinessPartner,
           nombre: sap.BusinessPartnerFullName || sap.BusinessPartnerName,
-          rut: '',
+          rut: sap.TaxNumber1 || sap.SearchTerm1,
           condicionPago: '',
           estadoCredito: 'AL_DIA',
           creditoAsignado: 0,
@@ -177,8 +206,14 @@ export function ClientesPanel() {
           porcentajeAgotamiento: 0,
           sucursal: '',
           giro: sap.Industry,
-          conceptoBusqueda: sap.SearchTerm1,
+          conceptoBusqueda: '',
+          direccion: (sap as any).direccion?.StreetName ?? '',
+          ciudad: (sap as any).direccion?.CityName ?? '',
+          region: CODIGO_REGION_SAP[(sap as any).direccion?.Region ?? ''] ?? (sap as any).direccion?.Region ?? '',
+          telefono: (sap as any).direccion?.PhoneNumber ?? '',
+          celular: (sap as any).direccion?.MobilePhoneNumber ?? '',
         })
+        setBuscarLoading(false)
         return
       }
     } catch {
@@ -260,8 +295,8 @@ export function ClientesPanel() {
   const handleGuardar = async () => {
     // Validar campos obligatorios
     if (!form.tratamiento || !form.rut || !form.nombre || !form.conceptoBusqueda ||
-        !form.giro || !form.direccion || !form.region || !form.ciudad ||
-        !form.comuna || !form.zonaTransporte) {
+      !form.giro || !form.direccion || !form.region || !form.ciudad ||
+      !form.comuna || !form.zonaTransporte) {
       setCrearError('Complete todos los campos obligatorios (*)')
       return
     }

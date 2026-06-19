@@ -91,7 +91,7 @@ export async function consultarStock(params: StockQueryParams): Promise<SapStock
       params: queryParams,
       headers: {
         Accept:        'application/json',
-        'sap-client':  '100',
+        'sap-client':  '200',
         Authorization: `Basic ${credenciales}`,
       },
       // Permitir certificados autofirmados en entornos SAP privados on-premise

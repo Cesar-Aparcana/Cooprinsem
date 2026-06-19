@@ -7,56 +7,57 @@ import https from 'https';
  * Datos de un cliente tal como los devuelve SAP desde A_BusinessPartner.
  */
 export interface SapCliente {
-  BusinessPartner:          string;  // Número de cliente SAP
-  BusinessPartnerFullName:  string;  // Nombre completo
-  BusinessPartnerName:      string;  // Nombre 1
-  BusinessPartnerName2:     string;  // Nombre 2
-  SearchTerm1:              string;  // Concepto búsqueda
-  SearchTerm2:              string;  // Concepto búsqueda 2
-  BusinessPartnerGrouping:  string;  // Agrupación
-  Industry:                 string;  // Giro
+  BusinessPartner: string;
+  BusinessPartnerFullName: string;
+  BusinessPartnerName: string;
+  BusinessPartnerName2: string;
+  SearchTerm1: string;
+  SearchTerm2: string;
+  BusinessPartnerGrouping: string;
+  Industry: string;
+  TaxNumber1: string;  // RUT completo con guión (ej: 10009114-3)
 }
 
 /**
  * Datos de dirección de un cliente desde A_BusinessPartnerAddress.
  */
 export interface SapDireccionCliente {
-  BusinessPartner:  string;
-  AddressID:        string;
-  StreetName:       string;   // Dirección
-  CityName:         string;   // Ciudad
-  Region:           string;   // Región (código)
-  PostalCode:       string;   // Código postal
-  Country:          string;   // País
-  PhoneNumber:      string;   // Teléfono
+  BusinessPartner: string;
+  AddressID: string;
+  StreetName: string;   // Dirección
+  CityName: string;   // Ciudad
+  Region: string;   // Región (código)
+  PostalCode: string;   // Código postal
+  Country: string;   // País
+  PhoneNumber: string;   // Teléfono
   MobilePhoneNumber: string;  // Celular
-  FaxNumber:        string;   // Fax
-  EmailAddress:     string;   // Correo
+  FaxNumber: string;   // Fax
+  EmailAddress: string;   // Correo
 }
 
 /**
  * Campos para crear un cliente nuevo en SAP.
  */
 export interface SapCrearClienteParams {
-  tratamiento:      string;
-  rut:              string;
-  nombre:           string;
-  nombre2?:         string;
+  tratamiento: string;
+  rut: string;
+  nombre: string;
+  nombre2?: string;
   conceptoBusqueda: string;
-  giro:             string;
-  direccion:        string;
-  region:           string;
-  ciudad:           string;
-  comuna:           string;
-  zonaTransporte:   string;
-  telefono?:        string;
-  celular?:         string;
-  fax?:             string;
+  giro: string;
+  direccion: string;
+  region: string;
+  ciudad: string;
+  comuna: string;
+  zonaTransporte: string;
+  telefono?: string;
+  celular?: string;
+  fax?: string;
   direccionPostal?: string;
-  ciudadPostal?:    string;
-  casilla?:         string;
-  correoContacto?:  string;
-  correoFactura?:   string;
+  ciudadPostal?: string;
+  casilla?: string;
+  correoContacto?: string;
+  correoFactura?: string;
 }
 
 // ─── Agente HTTPS ─────────────────────────────────────────────────────────────
@@ -85,11 +86,11 @@ function crearClienteAxios(): AxiosInstance {
   const credenciales = Buffer.from(`${SAP_USER}:${SAP_PASSWORD}`).toString('base64');
 
   return axios.create({
-    baseURL:    `${sapHost}/API_BUSINESS_PARTNER`,
+    baseURL: `${sapHost}/API_BUSINESS_PARTNER`,
     httpsAgent,
     headers: {
-      Accept:        'application/json',
-      'sap-client':  '100',
+      Accept: 'application/json',
+      'sap-client': '200',
       Authorization: `Basic ${credenciales}`,
     },
   });
@@ -126,8 +127,8 @@ export async function buscarClientePorRut(rut: string): Promise<SapCliente[]> {
   // Primero buscar el BusinessPartner por RUT en la entidad de impuestos
   const responseTax = await cliente.get('/A_BusinessPartnerTaxNumber', {
     params: {
-      $filter:  `BPTaxNumber eq '${rut}'`,
-      $format:  'json',
+      $filter: `BPTaxNumber eq '${rut}'`,
+      $format: 'json',
     },
   });
 
@@ -161,11 +162,11 @@ export async function obtenerCsrfToken(): Promise<{ token: string; cookies: stri
   const cliente = crearClienteAxios();
 
   const response = await cliente.get('/', {
-    params:  { $format: 'json' },
+    params: { $format: 'json' },
     headers: { 'X-CSRF-Token': 'Fetch' },
   });
 
-  const token   = response.headers['x-csrf-token'] as string;
+  const token = response.headers['x-csrf-token'] as string;
   const cookies = (response.headers['set-cookie'] ?? []).join('; ');
 
   if (!token) {
@@ -182,6 +183,50 @@ export async function obtenerCsrfToken(): Promise<{ token: string; cookies: stri
  * @param params - Datos del cliente a crear
  * @returns Número de BusinessPartner creado
  */
+/**
+ * Obtiene el RUT de un cliente desde la entidad A_Customer.
+ * La entidad A_BusinessPartner tiene el RUT incompleto en SearchTerm1,
+ * mientras que A_Customer tiene el RUT completo con dígito verificador en TaxNumber1.
+ *
+ * @param businessPartner - Número de Business Partner
+ * @returns RUT completo con dígito verificador (ej: "10009114-3") o cadena vacía
+ */
+export async function obtenerRutCliente(businessPartner: string): Promise<string> {
+  const cliente = crearClienteAxios();
+
+  const response = await cliente.get(
+    `/A_Customer('${businessPartner}')`,
+    { params: { $format: 'json' } }
+  );
+
+  return (response.data?.d?.TaxNumber1 as string) ?? '';
+}
+
+/**
+ * Obtiene la dirección de un cliente desde SAP.
+ * Los datos de dirección están en una entidad separada A_BusinessPartnerAddress.
+ *
+ * @param businessPartner - Número de Business Partner
+ * @returns Datos de dirección del cliente
+ */
+export async function obtenerDireccionCliente(businessPartner: string): Promise<SapDireccionCliente | null> {
+  const cliente = crearClienteAxios();
+
+  const response = await cliente.get(
+    `/A_BusinessPartnerAddress`,
+    {
+      params: {
+        $filter: `BusinessPartner eq '${businessPartner}'`,
+        $format: 'json',
+        $top: '1',
+      },
+    }
+  );
+
+  const resultados = response.data?.d?.results ?? [];
+  return resultados.length > 0 ? resultados[0] as SapDireccionCliente : null;
+}
+
 export async function crearClienteSap(params: SapCrearClienteParams): Promise<string> {
   const { token, cookies } = await obtenerCsrfToken();
   const cliente = crearClienteAxios();
@@ -190,29 +235,29 @@ export async function crearClienteSap(params: SapCrearClienteParams): Promise<st
   const body = {
     BusinessPartnerCategory: '1',           // 1 = Persona natural
     BusinessPartnerGrouping: 'DEUD',        // Grupo deudor Cooprinsem
-    FirstName:               params.nombre,
-    LastName:                params.nombre2 ?? '',
-    SearchTerm1:             params.conceptoBusqueda,
-    Industry:                params.giro,
+    FirstName: params.nombre,
+    LastName: params.nombre2 ?? '',
+    SearchTerm1: params.conceptoBusqueda,
+    Industry: params.giro,
     to_BusinessPartnerAddress: {
       results: [
         {
-          StreetName:        params.direccion,
-          CityName:          params.ciudad,
-          Region:            params.region,
-          PostalCode:        params.casilla ?? '',
-          Country:           'CL',
-          PhoneNumber:       params.telefono ?? '',
-          MobilePhoneNumber: params.celular  ?? '',
-          FaxNumber:         params.fax      ?? '',
-          EmailAddress:      params.correoFactura ?? params.correoContacto ?? '',
+          StreetName: params.direccion,
+          CityName: params.ciudad,
+          Region: params.region,
+          PostalCode: params.casilla ?? '',
+          Country: 'CL',
+          PhoneNumber: params.telefono ?? '',
+          MobilePhoneNumber: params.celular ?? '',
+          FaxNumber: params.fax ?? '',
+          EmailAddress: params.correoFactura ?? params.correoContacto ?? '',
         },
       ],
     },
     to_BusinessPartnerTaxNumber: {
       results: [
         {
-          BPTaxType:   'CL1',  // Tipo impuesto Chile: RUT
+          BPTaxType: 'CL1',  // Tipo impuesto Chile: RUT
           BPTaxNumber: params.rut,
         },
       ],
@@ -223,7 +268,7 @@ export async function crearClienteSap(params: SapCrearClienteParams): Promise<st
     headers: {
       'Content-Type': 'application/json',
       'X-CSRF-Token': token,
-      Cookie:         cookies,
+      Cookie: cookies,
     },
   });
 

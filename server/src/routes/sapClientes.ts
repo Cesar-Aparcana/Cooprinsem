@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import {
   buscarClientePorNumero,
   buscarClientePorRut,
+  obtenerDireccionCliente,
+  obtenerRutCliente,
   crearClienteSap,
   SapCrearClienteParams,
 } from './sapClientesService';
@@ -33,18 +35,31 @@ router.get('/buscar', async (req: Request, res: Response) => {
     if (numero) {
       // Búsqueda por número de cliente
       const cliente = await buscarClientePorNumero(numero as string);
-      res.json({ success: true, data: cliente });
+      const [direccion, rut] = await Promise.all([
+        obtenerDireccionCliente(cliente.BusinessPartner).catch(() => null),
+        obtenerRutCliente(cliente.BusinessPartner).catch(() => ''),
+      ]);
+      res.json({ success: true, data: { ...cliente, TaxNumber1: rut, direccion } });
     } else {
       // Búsqueda por RUT
       const clientes = await buscarClientePorRut(rut as string);
-      res.json({ success: true, total: clientes.length, data: clientes });
+
+      // Enriquecer cada cliente con su dirección
+      const clientesConDireccion = await Promise.all(
+        clientes.map(async (cliente) => {
+          const direccion = await obtenerDireccionCliente(cliente.BusinessPartner).catch(() => null);
+          return { ...cliente, direccion };
+        })
+      );
+
+      res.json({ success: true, total: clientesConDireccion.length, data: clientesConDireccion });
     }
   } catch (error: any) {
     console.error('[GET /api/sap-clientes/buscar] Error:', error.message);
     res.status(500).json({
       success: false,
       message: 'Error al buscar cliente en SAP',
-      detail:  error.message,
+      detail: error.message,
     });
   }
 });
@@ -79,16 +94,16 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const businessPartner = await crearClienteSap(params);
     res.status(201).json({
-      success:         true,
+      success: true,
       businessPartner,
-      message:         `Cliente ${businessPartner} creado correctamente en SAP`,
+      message: `Cliente ${businessPartner} creado correctamente en SAP`,
     });
   } catch (error: any) {
     console.error('[POST /api/sap-clientes] Error:', error.message);
     res.status(500).json({
       success: false,
       message: 'Error al crear cliente en SAP',
-      detail:  error.message,
+      detail: error.message,
     });
   }
 });

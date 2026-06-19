@@ -23,6 +23,11 @@ import '@ui5/webcomponents-icons/dist/customer.js'
 import '@ui5/webcomponents-icons/dist/save.js'
 import '@ui5/webcomponents-icons/dist/decline.js'
 import { getCliente, buscarClientes, crearCliente } from '@/services/api/clientes'
+import {
+  buscarSapClientePorNumero,
+  buscarSapClientePorRut,
+  crearSapCliente,
+} from '@/services/api/sapClientes'
 import { formatCLP, formatRUT } from '@/utils/format'
 import { validarRUT } from '@/utils/validations'
 import type { ICliente, ICrearCliente } from '@/types/cliente'
@@ -93,7 +98,7 @@ export function ClientesPanel() {
 
   // Auto-búsqueda después de 3 caracteres con debounce 300ms
   useEffect(() => {
-    if (buscarCodigo.trim().length < 3) {
+    if (buscarCodigo.trim().length < 3 || clienteBuscado !== null) {
       setSugerencias([])
       setMostrarSugerencias(false)
       return
@@ -125,19 +130,71 @@ export function ClientesPanel() {
   // --- Handlers ---
   const handleBuscarCliente = async () => {
     if (!buscarCodigo.trim()) return
+
     setBuscarLoading(true)
     setBuscarError(null)
     setClienteBuscado(null)
+
+    const termino = buscarCodigo.trim()
+
     try {
-      // Buscar por nombre, RUT o código (case-insensitive)
-      const resultados = await buscarClientes(buscarCodigo.trim())
+      // Determinar si el término parece un RUT (contiene guión) o un número de cliente
+      const esRut = termino.includes('-')
+      const esNumero = /^\d+$/.test(termino)
+
+      if (esRut) {
+        // Buscar por RUT en SAP
+        const resultadosSap = await buscarSapClientePorRut(termino)
+        if (resultadosSap.length > 0) {
+          // Mapear resultado SAP al formato ICliente del panel
+          const sap = resultadosSap[0]
+          setClienteBuscado({
+            codigoCliente: sap.BusinessPartner,
+            nombre: sap.BusinessPartnerFullName || sap.BusinessPartnerName,
+            rut: termino,
+            condicionPago: '',
+            estadoCredito: 'AL_DIA',
+            creditoAsignado: 0,
+            creditoUtilizado: 0,
+            porcentajeAgotamiento: 0,
+            sucursal: '',
+            giro: sap.Industry,
+            conceptoBusqueda: sap.SearchTerm1,
+          })
+          return
+        }
+      } else if (esNumero) {
+        // Buscar por número de cliente en SAP
+        const sap = await buscarSapClientePorNumero(termino)
+        setClienteBuscado({
+          codigoCliente: sap.BusinessPartner,
+          nombre: sap.BusinessPartnerFullName || sap.BusinessPartnerName,
+          rut: '',
+          condicionPago: '',
+          estadoCredito: 'AL_DIA',
+          creditoAsignado: 0,
+          creditoUtilizado: 0,
+          porcentajeAgotamiento: 0,
+          sucursal: '',
+          giro: sap.Industry,
+          conceptoBusqueda: sap.SearchTerm1,
+        })
+        return
+      }
+    } catch {
+      // SAP no disponible o sin permisos — caer en BD interna
+    }
+
+    // Fallback: buscar en BD interna
+    try {
+      const resultados = await buscarClientes(termino)
       if (resultados.length === 0) {
-        setBuscarError(`Cliente ${buscarCodigo} no encontrado`)
+        setBuscarError(`Cliente ${termino} no encontrado`)
       } else {
         setClienteBuscado(resultados[0])
       }
     } catch {
-      setBuscarError(`Cliente ${buscarCodigo} no encontrado`)
+      setBuscarError(`Cliente ${termino} no encontrado`)
     } finally {
       setBuscarLoading(false)
     }
@@ -218,6 +275,18 @@ export function ClientesPanel() {
     setCrearLoading(true)
     setCrearError(null)
     setCrearExito(null)
+
+    try {
+      // Intentar crear en SAP primero
+      const businessPartner = await crearSapCliente(form)
+      setCrearExito(`Cliente ${businessPartner} creado correctamente en SAP`)
+      setForm({ ...FORM_INICIAL })
+      return
+    } catch {
+      // SAP no disponible o sin permisos — caer en BD interna
+    }
+
+    // Fallback: crear en BD interna
     try {
       const nuevo = await crearCliente(form)
       setCrearExito(`Cliente ${nuevo.codigoCliente} — ${nuevo.nombre} creado correctamente`)

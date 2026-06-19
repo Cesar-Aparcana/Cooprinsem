@@ -17,6 +17,7 @@ import adminRouter from './routes/admin';
 import interfacesRouter from './routes/interfaces';
 import sapMaestroRouter from './routes/sapMaestro';
 import sapStockRouter from './routes/sapStock';
+import sapClientesRouter from './routes/sapClientes';
 
 const app = express();
 const PORT = parseInt(process.env['PORT'] ?? '3001', 10);
@@ -56,6 +57,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/interfaces', interfacesRouter);
 app.use('/api/sap-maestro', sapMaestroRouter);
 app.use('/api/sap-stock', sapStockRouter);
+app.use('/api/sap-clientes', sapClientesRouter);
 
 // 404 handler
 app.use((_req, res) => {

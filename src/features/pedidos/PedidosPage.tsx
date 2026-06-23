@@ -14,17 +14,17 @@ import { StockPage } from '@/features/stock/StockPage'
 
 // Menú lateral del módulo Pedidos (replica patrón CajaPage)
 const MENU_PEDIDOS = [
+  { id: 'clientes', label: 'Clientes', icon: 'customer', habilitado: true },
   { id: 'stock', label: 'Stock', icon: 'inventory', habilitado: true },
   { id: 'pedidos', label: 'Pedidos', icon: 'cart', habilitado: true },
   { id: 'cotizacion', label: 'Cotización', icon: 'document-text', habilitado: false },
   { id: 'busqueda-doc', label: 'Busqueda Doc', icon: 'search', habilitado: true },
-  { id: 'clientes', label: 'Clientes', icon: 'customer', habilitado: true },
   { id: 'nota-creditos', label: 'Nota Creditos', icon: 'receipt', habilitado: false },
   { id: 'reporte-diio', label: 'Reporte DIIO', icon: 'bar-chart', habilitado: false },
 ] as const
 
 export function PedidosPage() {
-  const [moduloActivo, setModuloActivo] = useState('stock')
+  const [moduloActivo, setModuloActivo] = useState('clientes')
 
   return (
     <div style={{ display: 'flex', height: '100%' }}>

@@ -18,12 +18,12 @@ router.get('/', asyncHandler(async (req, res) => {
   const clientes = await prisma.cliente.findMany({
     where: search
       ? {
-          OR: [
-            { nombre: { contains: search, mode: 'insensitive' } },
-            { rut: { contains: search, mode: 'insensitive' } },
-            { kunnr: { contains: search, mode: 'insensitive' } },
-          ],
-        }
+        OR: [
+          { nombre: { contains: search, mode: 'insensitive' } },
+          { rut: { contains: search, mode: 'insensitive' } },
+          { kunnr: { contains: search, mode: 'insensitive' } },
+        ],
+      }
       : {},
     orderBy: [{ nombre: 'asc' }],
   });
@@ -80,13 +80,15 @@ router.post('/', asyncHandler(async (req, res) => {
   }
 
   // Generar kunnr correlativo
-  const ultimo = await prisma.cliente.findFirst({
-    where: { kunnr: { not: '999999' } },
-    orderBy: { kunnr: 'desc' },
+  // Generar kunnr correlativo — busca el máximo numérico para evitar colisiones
+  const todosKunnr = await prisma.cliente.findMany({
+    select: { kunnr: true },
   });
-  const nuevoKunnr = ultimo
-    ? String(Number(ultimo.kunnr) + 1).padStart(10, '0')
-    : '0001000010';
+  const maxKunnr = todosKunnr
+    .map(c => Number(c.kunnr))
+    .filter(n => !isNaN(n) && n < 9000000000)
+    .reduce((max, n) => Math.max(max, n), 1000000000);
+  const nuevoKunnr = String(maxKunnr + 1).padStart(10, '0');
 
   const cliente = await prisma.cliente.create({
     data: {

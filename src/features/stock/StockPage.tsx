@@ -15,7 +15,6 @@ import {
 } from '@ui5/webcomponents-react'
 import '@ui5/webcomponents-icons/dist/search.js'
 import '@ui5/webcomponents-icons/dist/clear-all.js'
-import '@ui5/webcomponents-icons/dist/inventory.js'
 import { getSapStock, SapStockRecord, SapStockQueryParams } from '@/services/api/sapStock'
 
 // ─── Tipos locales ─────────────────────────────────────────────────────────────
@@ -26,15 +25,15 @@ type EstadoBusqueda = 'inicial' | 'cargando' | 'con-resultados' | 'sin-resultado
 
 /**
  * Página de Consulta de Stock SAP.
- * Permite filtrar por material, centro y almacén, y muestra los resultados
- * obtenidos en tiempo real desde la API SAP API_MATERIAL_STOCK_SRV.
+ * Consume la API personalizada ZSB_STOCK de Cooprinsem que devuelve datos enriquecidos:
+ * descripción del material, nombre del centro y los tres tipos de stock separados.
  */
 export function StockPage() {
   // ── Estado de filtros ──────────────────────────────────────────────────────
-  const [filtroMaterial,  setFiltroMaterial]  = useState('')
-  const [filtroCentro,    setFiltroCentro]    = useState('')
-  const [filtroAlmacen,   setFiltroAlmacen]   = useState('')
-  const [filtroTipoStock, setFiltroTipoStock] = useState('')
+  const [filtroMaterial,      setFiltroMaterial]      = useState('')
+  const [filtroCentro,        setFiltroCentro]        = useState('')
+  const [filtroAlmacen,       setFiltroAlmacen]       = useState('')
+  const [filtroSoloConStock,  setFiltroSoloConStock]  = useState(false)
 
   // ── Estado de resultados ───────────────────────────────────────────────────
   const [registros,      setRegistros]      = useState<SapStockRecord[]>([])
@@ -48,11 +47,11 @@ export function StockPage() {
    */
   async function handleBuscar() {
     const params: SapStockQueryParams = {
-      material:           filtroMaterial.trim()  || undefined,
-      plant:              filtroCentro.trim()    || undefined,
-      storageLocation:    filtroAlmacen.trim()   || undefined,
-      inventoryStockType: filtroTipoStock.trim() || undefined,
-      top:                200,
+      material:        filtroMaterial.trim()  || undefined,
+      plant:           filtroCentro.trim()    || undefined,
+      storageLocation: filtroAlmacen.trim()   || undefined,
+      soloConStock:    filtroSoloConStock,
+      top:             200,
     }
 
     setEstadoBusqueda('cargando')
@@ -76,10 +75,20 @@ export function StockPage() {
     setFiltroMaterial('')
     setFiltroCentro('')
     setFiltroAlmacen('')
-    setFiltroTipoStock('')
+    setFiltroSoloConStock(false)
     setRegistros([])
     setEstadoBusqueda('inicial')
     setMensajeError('')
+  }
+
+  /**
+   * Formatea una cantidad de stock para mostrar en pantalla.
+   * Elimina ceros innecesarios al final (ej: "1.000" → "1", "245.500" → "245.5")
+   */
+  function formatearStock(cantidad: string): string {
+    const numero = parseFloat(cantidad)
+    if (isNaN(numero)) return cantidad
+    return numero.toLocaleString('es-CL', { maximumFractionDigits: 3 })
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -105,7 +114,7 @@ export function StockPage() {
         <FlexBox direction="Column" style={{ gap: '0.25rem', minWidth: '180px' }}>
           <Label>Material</Label>
           <Input
-            placeholder="Ej: D2C_C_106"
+            placeholder="Ej: 14700006"
             value={filtroMaterial}
             onInput={e => setFiltroMaterial(e.target.value)}
           />
@@ -114,7 +123,7 @@ export function StockPage() {
         <FlexBox direction="Column" style={{ gap: '0.25rem', minWidth: '180px' }}>
           <Label>Centro (Plant)</Label>
           <Input
-            placeholder="Ej: 1010"
+            placeholder="Ej: D190"
             value={filtroCentro}
             onInput={e => setFiltroCentro(e.target.value)}
           />
@@ -123,19 +132,24 @@ export function StockPage() {
         <FlexBox direction="Column" style={{ gap: '0.25rem', minWidth: '180px' }}>
           <Label>Almacén (Storage Location)</Label>
           <Input
-            placeholder="Ej: 101C"
+            placeholder="Ej: B000"
             value={filtroAlmacen}
             onInput={e => setFiltroAlmacen(e.target.value)}
           />
         </FlexBox>
 
-        <FlexBox direction="Column" style={{ gap: '0.25rem', minWidth: '180px' }}>
-          <Label>Tipo de Stock</Label>
-          <Input
-            placeholder="Ej: 01"
-            value={filtroTipoStock}
-            onInput={e => setFiltroTipoStock(e.target.value)}
+        {/* Checkbox solo con stock disponible */}
+        <FlexBox alignItems="Center" style={{ gap: '0.5rem', paddingBottom: '0.25rem' }}>
+          <input
+            type="checkbox"
+            id="soloConStock"
+            checked={filtroSoloConStock}
+            onChange={e => setFiltroSoloConStock(e.target.checked)}
+            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
           />
+          <label htmlFor="soloConStock" style={{ fontSize: '0.875rem', cursor: 'pointer' }}>
+            Solo con stock disponible
+          </label>
         </FlexBox>
 
         {/* Botones */}
@@ -220,11 +234,13 @@ export function StockPage() {
             headerRow={
               <TableHeaderRow>
                 <TableHeaderCell>Material</TableHeaderCell>
+                <TableHeaderCell>Descripción</TableHeaderCell>
                 <TableHeaderCell>Centro</TableHeaderCell>
+                <TableHeaderCell>Nombre Centro</TableHeaderCell>
                 <TableHeaderCell>Almacén</TableHeaderCell>
-                <TableHeaderCell>Lote</TableHeaderCell>
-                <TableHeaderCell>Tipo Stock</TableHeaderCell>
-                <TableHeaderCell>Cantidad</TableHeaderCell>
+                <TableHeaderCell>Stock Libre</TableHeaderCell>
+                <TableHeaderCell>En Inspección</TableHeaderCell>
+                <TableHeaderCell>Bloqueado</TableHeaderCell>
                 <TableHeaderCell>Unidad</TableHeaderCell>
               </TableHeaderRow>
             }
@@ -232,14 +248,14 @@ export function StockPage() {
             {registros.map((registro, index) => (
               <TableRow key={index}>
                 <TableCell>{registro.Material}</TableCell>
+                <TableCell>{registro.MaterialDescription}</TableCell>
                 <TableCell>{registro.Plant}</TableCell>
+                <TableCell>{registro.PlantName}</TableCell>
                 <TableCell>{registro.StorageLocation}</TableCell>
-                <TableCell>{registro.Batch || '—'}</TableCell>
-                <TableCell>{registro.InventoryStockType}</TableCell>
-                <TableCell>
-                  {Number(registro.MatlWrhsStkQtyInMatlBaseUnit).toLocaleString('es-CL')}
-                </TableCell>
-                <TableCell>{registro.MaterialBaseUnit}</TableCell>
+                <TableCell>{formatearStock(registro.UnrestrictedStock)}</TableCell>
+                <TableCell>{formatearStock(registro.QualityInspectionStock)}</TableCell>
+                <TableCell>{formatearStock(registro.BlockedStock)}</TableCell>
+                <TableCell>{registro.BaseUnit}</TableCell>
               </TableRow>
             ))}
           </Table>

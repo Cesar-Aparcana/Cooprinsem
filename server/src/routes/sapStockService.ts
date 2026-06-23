@@ -4,28 +4,31 @@ import https from 'https';
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 /**
- * Representa un registro de stock tal como lo devuelve la API de SAP.
- * Campos basados en la entidad A_MatlStkInAcctMod de API_MATERIAL_STOCK_SRV.
+ * Representa un registro de stock tal como lo devuelve la API personalizada
+ * ZSB_STOCK desarrollada por el equipo SAP de Cooprinsem.
+ * Esta API enriquece los datos estándar con descripción del material y nombre del centro.
  */
 export interface SapStockRecord {
-  Material:                     string;
-  Plant:                        string;
-  StorageLocation:              string;
-  Batch:                        string;
-  InventoryStockType:           string;
-  MaterialBaseUnit:             string;
-  MatlWrhsStkQtyInMatlBaseUnit: string;
+  Material: string;  // Código del material
+  Plant: string;  // Código del centro
+  StorageLocation: string;  // Código del almacén
+  MaterialDescription: string;  // Descripción del material
+  PlantName: string;  // Nombre del centro (ej: "Osorno")
+  UnrestrictedStock: string;  // Stock libre disponible para venta
+  QualityInspectionStock: string;  // Stock en inspección de calidad
+  BlockedStock: string;  // Stock bloqueado (no disponible)
+  BaseUnit: string;  // Unidad de medida base
 }
 
 /**
  * Parámetros de filtro que puede enviar el frontend al consultar stock.
  */
 export interface StockQueryParams {
-  material?:           string;
-  plant?:              string;
-  storageLocation?:    string;
-  inventoryStockType?: string;
-  top?:                number;
+  material?: string;
+  plant?: string;
+  storageLocation?: string;
+  soloConStock?: boolean;  // Si true, solo retorna materiales con UnrestrictedStock > 0
+  top?: number;
 }
 
 // ─── Agente HTTPS ─────────────────────────────────────────────────────────────
@@ -39,11 +42,14 @@ const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 // ─── Función principal ────────────────────────────────────────────────────────
 
 /**
- * Consulta el stock de materiales en SAP usando la API estándar API_MATERIAL_STOCK_SRV.
+ * Consulta el stock de materiales usando la API personalizada ZSB_STOCK de Cooprinsem.
+ * Esta API devuelve datos enriquecidos: descripción del material, nombre del centro
+ * y los tres tipos de stock separados (libre, inspección y bloqueado).
+ *
  * Actúa como proxy seguro: las credenciales SAP nunca se exponen al frontend.
  *
- * @param params - Filtros opcionales para la consulta (material, centro, almacén, etc.)
- * @returns Lista de registros de stock devueltos por SAP
+ * @param params - Filtros opcionales para la consulta
+ * @returns Lista de registros de stock
  */
 export async function consultarStock(params: StockQueryParams): Promise<SapStockRecord[]> {
   const { SAP_BASE_URL, SAP_USER, SAP_PASSWORD } = process.env;
@@ -52,7 +58,11 @@ export async function consultarStock(params: StockQueryParams): Promise<SapStock
     throw new Error('Faltan variables de entorno SAP (SAP_BASE_URL, SAP_USER, SAP_PASSWORD)');
   }
 
-  // Construir los filtros OData según los parámetros recibidos
+  // Construir la URL base para ZSB_STOCK a partir del host del servidor SAP
+  const sapHost = SAP_BASE_URL.replace('/sap/opu/odata/sap/API_MATERIAL_STOCK_SRV', '');
+  const zStockUrl = `${sapHost}/sap/opu/odata/sap/ZSB_STOCK`;
+
+  // Construir filtros OData según los parámetros recibidos
   const filtros: string[] = [];
 
   if (params.material) {
@@ -64,40 +74,35 @@ export async function consultarStock(params: StockQueryParams): Promise<SapStock
   if (params.storageLocation) {
     filtros.push(`StorageLocation eq '${params.storageLocation}'`);
   }
-  if (params.inventoryStockType) {
-    filtros.push(`InventoryStockType eq '${params.inventoryStockType}'`);
-  }
-
-  // Parámetros de la consulta OData
-  const queryParams: Record<string, string> = {
-    $select: 'Material,Plant,StorageLocation,Batch,InventoryStockType,MaterialBaseUnit,MatlWrhsStkQtyInMatlBaseUnit',
-    $top:    String(params.top ?? 100),
-    $format: 'json',
-  };
-
-  if (filtros.length > 0) {
-    queryParams['$filter'] = filtros.join(' and ');
+  if (params.soloConStock) {
+    filtros.push(`UnrestrictedStock gt 0`);
   }
 
   // Construir el header Authorization en Base64.
   // IMPORTANTE: en el .env la contraseña debe ir entre comillas si contiene
-  // caracteres especiales como #, ya que de lo contrario dotenv los interpreta
-  // como inicio de comentario y trunca el valor.
+  // caracteres especiales como #, ya que dotenv los interpreta como comentario.
   const credenciales = Buffer.from(`${SAP_USER}:${SAP_PASSWORD}`).toString('base64');
 
-  const response = await axios.get(
-    `${SAP_BASE_URL}/A_MatlStkInAcctMod`,
-    {
-      params: queryParams,
-      headers: {
-        Accept:        'application/json',
-        'sap-client':  '200',
-        Authorization: `Basic ${credenciales}`,
-      },
-      // Permitir certificados autofirmados en entornos SAP privados on-premise
-      httpsAgent,
-    }
-  );
+  // Construir la URL manualmente sin codificar los $ para que SAP los procese correctamente.
+  // URLSearchParams codifica $ como %24 lo que hace que SAP ignore los parámetros OData.
+  const select = 'Material,MaterialDescription,Plant,PlantName,StorageLocation,UnrestrictedStock,QualityInspectionStock,BlockedStock,BaseUnit';
+  const top = String(params.top ?? 100);
+
+  let urlCompleta = `${zStockUrl}/MaterialStock?$select=${select}&$top=${top}&$format=json&sap-client=200`;
+
+  if (filtros.length > 0) {
+    urlCompleta += `&$filter=${encodeURIComponent(filtros.join(' and '))}`;
+  }
+
+  const response = await axios.get(urlCompleta, {
+    headers: {
+      Accept: 'application/json',
+      'Accept-Language': 'es',
+      'sap-client': '200',
+      Authorization: `Basic ${credenciales}`,
+    },
+    httpsAgent,
+  });
 
   // La API OData de SAP envuelve los resultados en d.results
   const resultados: SapStockRecord[] = response.data?.d?.results ?? [];

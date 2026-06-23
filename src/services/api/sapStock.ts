@@ -3,17 +3,19 @@ import { API_BASE_URL } from './config';
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 /**
- * Representa un registro de stock tal como lo devuelve nuestro backend,
- * que a su vez lo obtiene de la API SAP API_MATERIAL_STOCK_SRV.
+ * Representa un registro de stock tal como lo devuelve el backend,
+ * que a su vez lo obtiene de la API personalizada ZSB_STOCK de Cooprinsem.
  */
 export interface SapStockRecord {
-  Material:                     string;
-  Plant:                        string;
-  StorageLocation:              string;
-  Batch:                        string;
-  InventoryStockType:           string;
-  MaterialBaseUnit:             string;
-  MatlWrhsStkQtyInMatlBaseUnit: string;
+  Material:               string;  // Código del material
+  Plant:                  string;  // Código del centro
+  StorageLocation:        string;  // Código del almacén
+  MaterialDescription:    string;  // Descripción del material
+  PlantName:              string;  // Nombre del centro (ej: "Osorno")
+  UnrestrictedStock:      string;  // Stock libre disponible para venta
+  QualityInspectionStock: string;  // Stock en inspección de calidad
+  BlockedStock:           string;  // Stock bloqueado (no disponible)
+  BaseUnit:               string;  // Unidad de medida base
 }
 
 /**
@@ -21,11 +23,11 @@ export interface SapStockRecord {
  * Todos son opcionales — si no se envía ninguno devuelve los primeros 100 registros.
  */
 export interface SapStockQueryParams {
-  material?:           string;
-  plant?:              string;
-  storageLocation?:    string;
-  inventoryStockType?: string;
-  top?:                number;
+  material?:        string;
+  plant?:           string;
+  storageLocation?: string;
+  soloConStock?:    boolean;
+  top?:             number;
 }
 
 /**
@@ -47,14 +49,13 @@ interface SapStockResponse {
  * @returns Lista de registros de stock devueltos por SAP
  */
 export async function getSapStock(params: SapStockQueryParams = {}): Promise<SapStockRecord[]> {
-  // Construir los query params solo con los valores que fueron proporcionados
   const queryParams = new URLSearchParams();
 
-  if (params.material)           queryParams.set('material',           params.material);
-  if (params.plant)              queryParams.set('plant',              params.plant);
-  if (params.storageLocation)    queryParams.set('storageLocation',    params.storageLocation);
-  if (params.inventoryStockType) queryParams.set('inventoryStockType', params.inventoryStockType);
-  if (params.top)                queryParams.set('top',                String(params.top));
+  if (params.material)                        queryParams.set('material',        params.material);
+  if (params.plant)                           queryParams.set('plant',           params.plant);
+  if (params.storageLocation)                 queryParams.set('storageLocation', params.storageLocation);
+  if (params.soloConStock)                    queryParams.set('soloConStock',    'true');
+  if (params.top)                             queryParams.set('top',             String(params.top));
 
   const url = `${API_BASE_URL}/api/sap-stock?${queryParams.toString()}`;
 

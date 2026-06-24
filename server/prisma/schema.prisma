@@ -255,3 +255,12 @@ enum EstadoPartida {
   VENCIDO
   PAGADO
 }
+
+model SapRegion {
+  id          Int      @id @default(autoincrement())
+  Codigo      String   @unique @db.VarChar(2)
+  Descripcion String   @db.VarChar(100)
+  created_at  DateTime @default(now()) @db.Timestamptz()
+
+  @@map("Sap_region")
+}

@@ -50,3 +50,9 @@ export interface ISapSociedad {
   Language: string
   ControllingArea: string
 }
+
+export interface ISapRegion {
+  id: number
+  Codigo: string
+  Descripcion: string
+}

@@ -31,12 +31,12 @@ import '@ui5/webcomponents-icons/dist/decline.js'
 import '@ui5/webcomponents-icons/dist/connected.js'
 import '@ui5/webcomponents-icons/dist/database.js'
 import type { IUsuarioAdmin, ICreateUsuarioRequest, IUpdateUsuarioRequest, IRol, ISucursal } from '@/types/admin'
-import type { IInterfaz, ISapBanco, ISapCentro, ISapCentroCosto, ISapSociedad } from '@/types/sapMaestro'
+import type { IInterfaz, ISapBanco, ISapCentro, ISapCentroCosto, ISapSociedad, ISapRegion } from '@/types/sapMaestro'
 import { getUsuarios, createUsuario, updateUsuario, toggleEstadoUsuario, getRoles, getSucursales, getCentrosUsuario, setCentrosUsuario } from '@/services/api/admin'
-import { getInterfases, getSapBancos, getSapCentros, getSapCentrosCosto, getSapSociedades } from '@/services/api/sapMaestro'
+import { getInterfases, getSapBancos, getSapCentros, getSapCentrosCosto, getSapSociedades, getSapRegiones } from '@/services/api/sapMaestro'
 
 type TabActiva = 'usuarios' | 'roles' | 'sucursales' | 'interfases' | 'tablas-sap'
-type TabSap = 'bancos' | 'centros' | 'centros-costo' | 'sociedades'
+type TabSap = 'bancos' | 'centros' | 'centros-costo' | 'sociedades' | 'regiones'
 
 const MENU_ADMIN = [
   { id: 'usuarios' as TabActiva, label: 'Usuarios', icon: 'employee' },
@@ -105,6 +105,7 @@ export function AdminPage() {
   const [centros, setCentros] = useState<ISapCentro[]>([])
   const [centrosCosto, setCentrosCosto] = useState<ISapCentroCosto[]>([])
   const [sociedades, setSociedades] = useState<ISapSociedad[]>([])
+  const [regiones, setRegiones] = useState<ISapRegion[]>([])
   const [searchSap, setSearchSap] = useState('')
 
   // Cargar datos según tab activa
@@ -155,6 +156,8 @@ export function AdminPage() {
       getSapCentrosCosto().then(setCentrosCosto).catch((e: Error) => setError(e.message)).finally(() => setIsLoading(false))
     } else if (tabSap === 'sociedades') {
       getSapSociedades().then(setSociedades).catch((e: Error) => setError(e.message)).finally(() => setIsLoading(false))
+    } else if (tabSap === 'regiones') {
+      getSapRegiones().then(setRegiones).catch((e: Error) => setError(e.message)).finally(() => setIsLoading(false))
     }
   }, [tabSap, tabActiva])
 
@@ -170,6 +173,8 @@ export function AdminPage() {
       getSapCentrosCosto(searchSap).then(setCentrosCosto).catch((e: Error) => setError(e.message)).finally(() => setIsLoading(false))
     } else if (tabSap === 'sociedades') {
       getSapSociedades(searchSap).then(setSociedades).catch((e: Error) => setError(e.message)).finally(() => setIsLoading(false))
+    } else if (tabSap === 'regiones') {
+      getSapRegiones(searchSap).then(setRegiones).catch((e: Error) => setError(e.message)).finally(() => setIsLoading(false))
     }
   }, [tabSap, searchSap])
 
@@ -426,9 +431,9 @@ export function AdminPage() {
 
               {/* Submenú SAP */}
               <FlexBox style={{ gap: '0.5rem', borderBottom: '1px solid var(--sapGroup_TitleBorderColor)', paddingBottom: '0.5rem' }}>
-                {(['bancos', 'centros', 'centros-costo', 'sociedades'] as TabSap[]).map((tab) => (
+                {(['bancos', 'centros', 'centros-costo', 'sociedades', 'regiones'] as TabSap[]).map((tab) => (
                   <Button key={tab} design={tabSap === tab ? 'Emphasized' : 'Default'} onClick={() => setTabSap(tab)}>
-                    {tab === 'bancos' ? 'Bancos' : tab === 'centros' ? 'Centros' : tab === 'centros-costo' ? 'Centros de Costo' : 'Sociedades'}
+                    {tab === 'bancos' ? 'Bancos' : tab === 'centros' ? 'Centros' : tab === 'centros-costo' ? 'Centros de Costo' : tab === 'sociedades' ? 'Sociedades' : 'Regiones'}
                   </Button>
                 ))}
               </FlexBox>
@@ -448,6 +453,7 @@ export function AdminPage() {
                   else if (tabSap === 'centros') getSapCentros().then(setCentros)
                   else if (tabSap === 'centros-costo') getSapCentrosCosto().then(setCentrosCosto)
                   else if (tabSap === 'sociedades') getSapSociedades().then(setSociedades)
+                  else if (tabSap === 'regiones') getSapRegiones().then(setRegiones)
                 }}>Limpiar</Button>
               </FlexBox>
 
@@ -510,6 +516,21 @@ export function AdminPage() {
                       <TableCell>{s.Currency}</TableCell>
                     </TableRow>
                   ))}
+                </Table>
+              )}
+
+              {/* Tabla Regiones */}
+              {tabSap === 'regiones' && (
+                <Table headerRow={<TableHeaderRow><TableHeaderCell>Código</TableHeaderCell><TableHeaderCell>Descripción</TableHeaderCell></TableHeaderRow>}>
+                  {regiones.length === 0
+                    ? <TableRow><TableCell>Sin datos disponibles</TableCell><TableCell>—</TableCell></TableRow>
+                    : regiones.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell>{r.Codigo}</TableCell>
+                        <TableCell>{r.Descripcion}</TableCell>
+                      </TableRow>
+                    ))
+                  }
                 </Table>
               )}
 

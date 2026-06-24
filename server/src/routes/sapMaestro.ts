@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
-import { asyncHandler } from '../middleware/errorHandler';
+import { asyncHandler, withRetry } from '../middleware/errorHandler';
 
 const router = Router();
 
@@ -76,6 +76,21 @@ router.get('/sociedades', asyncHandler(async (req: Request, res: Response) => {
   });
 
   res.json({ d: { results: sociedades } });
+}));
+
+// GET /api/sap-maestro/regiones
+router.get('/regiones', asyncHandler(async (req: Request, res: Response) => {
+  const { search } = req.query;
+  const regiones = await withRetry(() => prisma.sapRegion.findMany({
+    where: search ? {
+      OR: [
+        { Codigo: { contains: String(search), mode: 'insensitive' } },
+        { Descripcion: { contains: String(search), mode: 'insensitive' } },
+      ]
+    } : undefined,
+    orderBy: { Codigo: 'asc' },
+  }));
+  res.json({ d: { results: regiones } });
 }));
 
 export default router;

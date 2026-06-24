@@ -1,4 +1,4 @@
-import type { IInterfaz, ISapBanco, ISapCentro, ISapCentroCosto, ISapSociedad } from '@/types/sapMaestro'
+import type { IInterfaz, ISapBanco, ISapCentro, ISapCentroCosto, ISapSociedad, ISapRegion } from '@/types/sapMaestro'
 import { API_BASE_URL } from './config'
 
 // Interfases SAP
@@ -54,4 +54,13 @@ export async function getSapSociedades(search?: string): Promise<ISapSociedad[]>
   if (!res.ok) throw new Error(`Error al cargar sociedades: ${res.status}`)
   const json = await res.json()
   return json.d.results as ISapSociedad[]
+}
+
+// Regiones SAP
+export async function getSapRegiones(search?: string): Promise<ISapRegion[]> {
+  const query = search ? `?search=${encodeURIComponent(search)}` : ''
+  const res = await fetch(`${API_BASE_URL}/api/sap-maestro/regiones${query}`)
+  if (!res.ok) throw new Error(`Error al cargar regiones: ${res.status}`)
+  const json = await res.json()
+  return json.d.results as ISapRegion[]
 }

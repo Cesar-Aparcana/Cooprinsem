@@ -234,7 +234,7 @@ export async function crearClienteSap(params: SapCrearClienteParams): Promise<st
   // Mapear los campos del formulario al formato SAP API_BUSINESS_PARTNER
   const body = {
     BusinessPartnerCategory: '1',           // 1 = Persona natural
-    BusinessPartnerGrouping: 'DEUD',        // Grupo deudor Cooprinsem
+    BusinessPartnerGrouping: '0001',        // Grupo deudor Cooprinsem
     FirstName: params.nombre,
     LastName: params.nombre2 ?? '',
     SearchTerm1: params.conceptoBusqueda,
@@ -247,21 +247,18 @@ export async function crearClienteSap(params: SapCrearClienteParams): Promise<st
           Region: params.region,
           PostalCode: params.casilla ?? '',
           Country: 'CL',
-          PhoneNumber: params.telefono ?? '',
-          MobilePhoneNumber: params.celular ?? '',
-          FaxNumber: params.fax ?? '',
-          EmailAddress: params.correoFactura ?? params.correoContacto ?? '',
+
         },
       ],
     },
-    to_BusinessPartnerTaxNumber: {
-      results: [
-        {
-          BPTaxType: 'CL1',  // Tipo impuesto Chile: RUT
-          BPTaxNumber: params.rut,
-        },
-      ],
-    },
+    // to_BusinessPartnerTaxNumber: {
+    //   results: [
+    //     {
+    //       BPTaxType: 'CL1',
+    //       BPTaxNumber: params.rut,
+    //     },
+    //   ],
+    // },
   };
 
   const response = await cliente.post('/A_BusinessPartner', body, {

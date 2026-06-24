@@ -31,36 +31,11 @@ import {
 import { formatCLP, formatRUT } from '@/utils/format'
 import { validarRUT } from '@/utils/validations'
 import type { ICliente, ICrearCliente } from '@/types/cliente'
+import { getSapRegiones } from '@/services/api/sapMaestro'
+import type { ISapRegion } from '@/types/sapMaestro'
 
 type SubTab = 'buscar' | 'crear' | 'ficha'
 
-// Mapa de código SAP de región → nombre de región en Chile
-const CODIGO_REGION_SAP: Record<string, string> = {
-  '01': 'I- Tarapacá',
-  '02': 'II- Antofagasta',
-  '03': 'III- Atacama',
-  '04': 'IV- Coquimbo',
-  '05': 'V- Valparaíso',
-  '06': 'VI- O\'Higgins',
-  '07': 'VII- Maule',
-  '08': 'VIII- Biobío',
-  '09': 'IX- La Araucanía',
-  '10': 'X- De los Lagos',
-  '11': 'XI- Aysén',
-  '12': 'XII- Magallanes',
-  '13': 'RM- Metropolitana',
-  '14': 'XIV- Los Ríos',
-  '15': 'XV- Arica y Parinacota',
-  '16': 'XVI- Ñuble',
-}
-
-// Regiones de Chile para el select
-const REGIONES_CHILE = [
-  'XV- Arica y Parinacota', 'I- Tarapacá', 'II- Antofagasta', 'III- Atacama',
-  'IV- Coquimbo', 'V- Valparaíso', 'VI- O\'Higgins', 'VII- Maule',
-  'XVI- Ñuble', 'VIII- Biobío', 'IX- La Araucanía', 'XIV- Los Ríos',
-  'X- De los Lagos', 'XI- Aysén', 'XII- Magallanes', 'RM- Metropolitana',
-]
 
 const FORM_INICIAL: ICrearCliente = {
   tratamiento: 'Señor',
@@ -105,6 +80,7 @@ export function ClientesPanel() {
   const [fichaSugerencias, setFichaSugerencias] = useState<ICliente[]>([])
   const [mostrarFichaSugerencias, setMostrarFichaSugerencias] = useState(false)
   const fichaDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [regionesSap, setRegionesSap] = useState<ISapRegion[]>([])
 
   // --- Estado Crear ---
   const [form, setForm] = useState<ICrearCliente>({ ...FORM_INICIAL })
@@ -115,6 +91,10 @@ export function ClientesPanel() {
   const updateForm = (field: keyof ICrearCliente, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }))
   }
+
+  useEffect(() => {
+    getSapRegiones().then(setRegionesSap).catch(() => { })
+  }, [])
 
   // Auto-búsqueda después de 3 caracteres con debounce 300ms
   useEffect(() => {
@@ -185,7 +165,7 @@ export function ClientesPanel() {
             conceptoBusqueda: '',
             direccion: (sap as any).direccion?.StreetName ?? '',
             ciudad: (sap as any).direccion?.CityName ?? '',
-            region: CODIGO_REGION_SAP[(sap as any).direccion?.Region ?? ''] ?? (sap as any).direccion?.Region ?? '',
+            region: (sap as any).direccion?.Region ?? '',
             telefono: (sap as any).direccion?.PhoneNumber ?? '',
             celular: (sap as any).direccion?.MobilePhoneNumber ?? '',
           })
@@ -209,7 +189,7 @@ export function ClientesPanel() {
           conceptoBusqueda: '',
           direccion: (sap as any).direccion?.StreetName ?? '',
           ciudad: (sap as any).direccion?.CityName ?? '',
-          region: CODIGO_REGION_SAP[(sap as any).direccion?.Region ?? ''] ?? (sap as any).direccion?.Region ?? '',
+          region: (sap as any).direccion?.Region ?? '',
           telefono: (sap as any).direccion?.PhoneNumber ?? '',
           celular: (sap as any).direccion?.MobilePhoneNumber ?? '',
         })
@@ -316,6 +296,7 @@ export function ClientesPanel() {
       const businessPartner = await crearSapCliente(form)
       setCrearExito(`Cliente ${businessPartner} creado correctamente en SAP`)
       setForm({ ...FORM_INICIAL })
+      setCrearLoading(false)
       return
     } catch {
       // SAP no disponible o sin permisos — caer en BD interna
@@ -443,7 +424,7 @@ export function ClientesPanel() {
                       {renderCampo('Giro', clienteBuscado.giro)}
                       {renderCampo('Dirección', clienteBuscado.direccion)}
                       {renderCampo('Comuna', clienteBuscado.comuna)}
-                      {renderCampo('Región', clienteBuscado.region)}
+                      {renderCampo('Región', regionesSap.find(r => r.Codigo === clienteBuscado.region)?.Descripcion ?? clienteBuscado.region)}
                       {renderCampo('Ciudad', clienteBuscado.ciudad)}
                       {renderCampo('Zona transporte', clienteBuscado.zonaTransporte)}
                       {renderCampo('Teléfono', clienteBuscado.telefono)}
@@ -556,8 +537,8 @@ export function ClientesPanel() {
                   style={{ flex: 1 }}
                 >
                   <Option data-value="">Seleccione...</Option>
-                  {REGIONES_CHILE.map((r) => (
-                    <Option key={r} data-value={r} selected={form.region === r}>{r}</Option>
+                  {regionesSap.map((r) => (
+                    <Option key={r.Codigo} data-value={r.Codigo} selected={form.region === r.Codigo}>{r.Descripcion}</Option>
                   ))}
                 </Select>
               </FlexBox>
@@ -803,3 +784,4 @@ function renderFormInput(label: string, value: string, onChange: (v: string) => 
     </FlexBox>
   )
 }
+

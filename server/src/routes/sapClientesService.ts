@@ -233,12 +233,15 @@ export async function crearClienteSap(params: SapCrearClienteParams): Promise<st
 
   // Mapear los campos del formulario al formato SAP API_BUSINESS_PARTNER
   const body = {
-    BusinessPartnerCategory: '1',           // 1 = Persona natural
+    BusinessPartnerCategory: '2',           // 2 = Empresa/Organización
     BusinessPartnerGrouping: '0001',        // Grupo deudor Cooprinsem
-    FirstName: params.nombre,
-    LastName: params.nombre2 ?? '',
-    SearchTerm1: params.conceptoBusqueda,
-    Industry: params.giro,
+    BusinessPartnerType: '0003',            // Tipo interlocutor comercial
+    OrganizationBPName1: params.nombre,     // Nombre 1 de la empresa
+    OrganizationBPName2: params.nombre2 ?? '', // Nombre 2
+    SearchTerm1: params.rut,                // Concepto búsqueda 1 = RUT
+    SearchTerm2: params.conceptoBusqueda,   // Concepto búsqueda 2
+    Industry: params.giro,                  // Ramo/Giro
+    FormOfAddress: '0003',                  // Tratamiento (0003 = empresa)
     to_BusinessPartnerAddress: {
       results: [
         {

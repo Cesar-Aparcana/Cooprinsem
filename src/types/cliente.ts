@@ -46,6 +46,7 @@ export type IClienteBusqueda = ICliente
 
 // Tipo para crear cliente (campos obligatorios marcados con * en SAP)
 export interface ICrearCliente {
+  tipoSocio: string          // * obligatorio (1=Persona, 2=Organización)
   tratamiento: string        // * obligatorio (Select: Señor/Señora)
   rut: string                // * obligatorio
   nombre: string             // * obligatorio (Nombre 1)

@@ -39,7 +39,8 @@ export interface SapDireccionCliente {
  * Campos para crear un cliente nuevo en SAP.
  */
 export interface SapCrearClienteParams {
-  tratamiento: string;
+  tipoSocio: string;     // Tipo socio (1=Persona, 2=Organización)
+  tratamiento: string;   // Tratamiento
   rut: string;
   nombre: string;
   nombre2?: string;

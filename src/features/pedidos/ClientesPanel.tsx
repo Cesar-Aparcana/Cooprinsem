@@ -38,6 +38,7 @@ type SubTab = 'buscar' | 'crear' | 'ficha'
 
 
 const FORM_INICIAL: ICrearCliente = {
+  tipoSocio: '2',
   tratamiento: 'Señor',
   rut: '',
   nombre: '',
@@ -491,6 +492,20 @@ export function ClientesPanel() {
 
           <Card header={<CardHeader titleText="Datos Generales" />}>
             <div style={{ padding: '1.5rem', display: 'grid', gap: '0.75rem', maxWidth: '600px' }}>
+              {/* Tipo de Socio * */}
+              <FlexBox alignItems="Center" style={{ gap: '0.5rem' }}>
+                <Label style={{ width: '150px', color: 'var(--sapNegativeColor)' }}>* Tipo de Socio:</Label>
+                <Select
+                  value={form.tipoSocio}
+                  onChange={(e) => updateForm('tipoSocio', (e.detail?.selectedOption as unknown as { value: string })?.value ?? '2')}
+                  style={{ width: '200px' }}
+                >
+                  <Option value="1">Persona</Option>
+                  <Option value="2">Organización</Option>
+                  <Option value="3">Grupo</Option>
+                </Select>
+              </FlexBox>
+
               {/* Tratamiento * */}
               <FlexBox alignItems="Center" style={{ gap: '0.5rem' }}>
                 <Label style={{ width: '150px', color: 'var(--sapNegativeColor)' }}>* Tratamiento:</Label>
@@ -499,8 +514,10 @@ export function ClientesPanel() {
                   onChange={(e) => updateForm('tratamiento', (e.detail?.selectedOption as unknown as { dataset: { value: string } })?.dataset?.value ?? 'Señor')}
                   style={{ width: '200px' }}
                 >
-                  <Option data-value="Señor" selected={form.tratamiento === 'Señor'}>Señor</Option>
-                  <Option data-value="Señora" selected={form.tratamiento === 'Señora'}>Señora</Option>
+                  <Option data-value="Señora">Señora</Option>
+                  <Option data-value="Señor">Señor</Option>
+                  <Option data-value="Empresa">Empresa</Option>
+                  <Option data-value="Señor y señora">Señor y señora</Option>
                 </Select>
               </FlexBox>
 

@@ -273,5 +273,46 @@ export async function crearClienteSap(params: SapCrearClienteParams): Promise<st
   });
 
   const businessPartner = response.data?.d?.BusinessPartner as string;
+  const addressID = response.data?.d?.to_BusinessPartnerAddress?.results?.[0]?.AddressID as string;
+  console.log('[crearClienteSap] BusinessPartner:', businessPartner, '| AddressID:', addressID);
+
+  // Segunda llamada: agregar datos de contacto si hay AddressID
+  if (addressID) {
+    try {
+      const addrKey = `A_BusinessPartnerAddress(BusinessPartner='${businessPartner}',AddressID='${addressID}')`;
+      const contactHeaders = { 'Content-Type': 'application/json', 'X-CSRF-Token': token, Cookie: cookies };
+
+      if (params.telefono) {
+        await cliente.post('/A_AddressPhoneNumber', {
+          AddressID: addressID,
+          PhoneNumber: params.telefono,
+          IsDefaultPhoneNumber: true,
+        }, { headers: contactHeaders });
+      }
+      if (params.celular) {
+        await cliente.post('/A_AddressMobilePhoneNumber', {
+          AddressID: addressID,
+          MobilePhoneNumber: params.celular,
+          IsDefaultMobilePhoneNumber: true,
+        }, { headers: contactHeaders });
+      }
+      if (params.fax) {
+        await cliente.post(`/${addrKey}/to_FaxNumber`, {
+          AddressID: addressID,
+          FaxNumber: params.fax,
+        }, { headers: contactHeaders });
+      }
+      if (params.correoFactura || params.correoContacto) {
+        await cliente.post('/A_AddressEmailAddress', {
+          AddressID: addressID,
+          EmailAddress: params.correoFactura ?? params.correoContacto ?? '',
+          IsDefaultEmailAddress: true,
+        }, { headers: contactHeaders });
+      }
+    } catch (contactErr: any) {
+      console.error('[crearClienteSap] Error en datos contacto:', JSON.stringify(contactErr?.response?.data ?? contactErr?.message));
+    }
+  }
+
   return businessPartner;
 }

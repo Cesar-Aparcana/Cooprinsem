@@ -298,18 +298,11 @@ export function ClientesPanel() {
       setForm({ ...FORM_INICIAL })
       setCrearLoading(false)
       return
-    } catch {
-      // SAP no disponible o sin permisos — caer en BD interna
-    }
-
-    // Fallback: crear en BD interna
-    try {
-      const nuevo = await crearCliente(form)
-      setCrearExito(`Cliente ${nuevo.codigoCliente} — ${nuevo.nombre} creado correctamente`)
-      setForm({ ...FORM_INICIAL })
     } catch (err) {
-      setCrearError(err instanceof Error ? err.message : 'Error creando cliente')
-    } finally {
+      const mensaje = err instanceof Error && err.message !== 'Failed to fetch'
+        ? err.message
+        : 'No se pudo crear el cliente. Verifique su conexión a la red e intente nuevamente.'
+      setCrearError(mensaje)
       setCrearLoading(false)
     }
   }

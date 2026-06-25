@@ -24,8 +24,8 @@ export function MainLayout() {
 
   // Rol 3 (Caja) solo ve Caja; Rol 2 (Ventas) solo ve Pedidos; Admin ve ambos
   const showPedidos = usuario.rolCod !== ROLES.CAJA
-  const showCaja    = usuario.rolCod !== ROLES.VENTAS
-  const showAdmin   = usuario.rolCod === ROLES.ADMINISTRADOR
+  const showCaja = usuario.rolCod !== ROLES.VENTAS
+  const showAdmin = usuario.rolCod === ROLES.ADMINISTRADOR
 
   function handleLogout() {
     setUsuario(null)
@@ -45,30 +45,27 @@ export function MainLayout() {
         }
         onLogoClick={() => navigate('/home')}
       >
-        {showPedidos && (
+        {showPedidos && isActive('/home') && (
           <ShellBarItem
             icon="cart"
             text="Pedidos"
             data-path="/pedidos"
-            style={isActive('/pedidos') ? { fontWeight: 'bold' } : undefined}
             onClick={() => navigate('/pedidos')}
           />
         )}
-        {showCaja && (
+        {showCaja && isActive('/home') && (
           <ShellBarItem
             icon="money-bills"
             text="Caja"
             data-path="/caja"
-            style={isActive('/caja') ? { fontWeight: 'bold' } : undefined}
             onClick={() => navigate('/caja')}
           />
         )}
-        {showAdmin && (
+        {showAdmin && isActive('/home') && (
           <ShellBarItem
             icon="settings"
             text="Administración"
             data-path="/admin"
-            style={isActive('/admin') ? { fontWeight: 'bold' } : undefined}
             onClick={() => navigate('/admin')}
           />
         )}

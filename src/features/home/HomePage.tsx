@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '@/stores/userContext'
+import { Button } from '@ui5/webcomponents-react'
+import '@ui5/webcomponents-icons/dist/log.js'
 import { ROLES, SUCURSALES } from '@/config/sap'
 import type { CodigoSucursal } from '@/config/sap'
 
@@ -19,7 +21,7 @@ const TILE_ICONS: Record<string, string> = {
 }
 
 export function HomePage() {
-  const { usuario } = useUser()
+  const { usuario, setUsuario } = useUser()
   const navigate = useNavigate()
 
   const rolCod = usuario?.rolCod ?? 0
@@ -51,6 +53,18 @@ export function HomePage() {
           <p style={styles.welcome}>
             Bienvenido, <strong>{usuario?.nombre}</strong>
           </p>
+        </div>
+
+        {/* Cerrar Sesión */}
+        <div style={{ position: 'fixed', top: '16px', left: '16px', zIndex: 10 }}>
+          <Button
+            icon="log"
+            design="Transparent"
+            onClick={() => { setUsuario(null); navigate('/login', { replace: true }) }}
+            style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)' }}
+          >
+            Cerrar Sesión
+          </Button>
         </div>
 
         {/* Tiles */}

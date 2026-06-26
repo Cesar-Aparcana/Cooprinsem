@@ -163,7 +163,11 @@ export function ClientesPanel() {
             porcentajeAgotamiento: 0,
             sucursal: '',
             giro: sap.Industry,
-            conceptoBusqueda: '',
+            tratamiento: (sap as any).FormOfAddress === '0001' ? 'Señora'
+              : (sap as any).FormOfAddress === '0002' ? 'Señor'
+                : (sap as any).FormOfAddress === '0003' ? 'Empresa'
+                  : (sap as any).FormOfAddress === '0004' ? 'Señor y señora' : '',
+            conceptoBusqueda: (sap as any).SearchTerm2 ?? '',
             direccion: (sap as any).direccion?.StreetName ?? '',
             ciudad: (sap as any).direccion?.CityName ?? '',
             region: (sap as any).direccion?.Region ?? '',

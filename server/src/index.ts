@@ -18,6 +18,7 @@ import interfacesRouter from './routes/interfaces';
 import sapMaestroRouter from './routes/sapMaestro';
 import sapStockRouter from './routes/sapStock';
 import sapClientesRouter from './routes/sapClientes';
+import sapPedidosRouter from './routes/sapPedidos';
 
 const app = express();
 const PORT = parseInt(process.env['PORT'] ?? '3001', 10);
@@ -58,6 +59,7 @@ app.use('/api/interfaces', interfacesRouter);
 app.use('/api/sap-maestro', sapMaestroRouter);
 app.use('/api/sap-stock', sapStockRouter);
 app.use('/api/sap-clientes', sapClientesRouter);
+app.use('/api/sap-pedidos', sapPedidosRouter);
 
 // 404 handler
 app.use((_req, res) => {
@@ -67,16 +69,12 @@ app.use((_req, res) => {
 // Error handler centralizado (debe ir después de todas las rutas)
 app.use(globalErrorHandler);
 
-const server = app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Backend POC Cooprinsem corriendo en http://localhost:${PORT}`);
+  
+  // Sincronizar con base central al arrancar
+  const { sincronizar } = await import('./database/syncService');
+  await sincronizar();
 });
 
-// Sincronizar con base central al arrancar (fuera del callback para Node 24+)
-import('./database/syncService').then(({ sincronizar }) => {
-  sincronizar().catch((err: Error) => {
-    console.error('Error en sincronización inicial:', err);
-  });
-});
-
-export { server };
 export default app;

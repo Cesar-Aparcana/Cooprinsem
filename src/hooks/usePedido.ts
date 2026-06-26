@@ -4,8 +4,8 @@ import type { ICliente } from '@/types/cliente'
 import type { IPedido, IPedidoHeader, ILineaPedido } from '@/types/pedido'
 import type { ICrearPedidoResponse } from '@/types/pedido'
 import { IVA } from '@/config/sap'
-import { crearPedido } from '@/services/api/pedidos'
 import { validarPedido } from '@/features/pedidos/pedidoValidation'
+import { validarPedidoSap } from '@/services/api/sapPedidos'
 
 const HEADER_INICIAL: IPedidoHeader = {
   codigoCliente: '',
@@ -97,11 +97,18 @@ export function usePedido() {
 
     setIsGrabando(true)
     try {
-      const res = await crearPedido(pedido)
-      setResultado(res)
-      return res.VBELN
+      const resultado = await validarPedidoSap({
+        cliente: header.codigoCliente,
+        items: lineas.map(l => ({
+          codigoMaterial: l.codigoMaterial,
+          cantidad: l.cantidad,
+        })),
+        centro: 'D190',
+      })
+      setResultado({ VBELN: resultado.message } as any)
+      return resultado.message
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error desconocido al crear pedido'
+      const msg = err instanceof Error ? err.message : 'Error desconocido al validar pedido'
       setError(msg)
       throw err
     } finally {

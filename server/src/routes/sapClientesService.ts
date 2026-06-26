@@ -91,7 +91,10 @@ function crearClienteAxios(): AxiosInstance {
     httpsAgent,
     headers: {
       Accept: 'application/json',
+      'Content-Type': 'application/json',
       'sap-client': '200',
+      'Accept-Language': 'es',
+      'sap-language': 'ES',
       Authorization: `Basic ${credenciales}`,
     },
   });
@@ -110,14 +113,15 @@ export async function buscarClientePorNumero(numeroCliente: string): Promise<Sap
 
   const response = await cliente.get(
     `/A_BusinessPartner('${numeroCliente}')`,
-    { params: { $format: 'json' } }
+    { params: { $format: 'json', $expand: 'to_BusinessPartnerAddress' } }
   );
 
+  console.log('[buscarClientePorNumero] FormOfAddress:', response.data?.d?.FormOfAddress, '| SearchTerm2:', response.data?.d?.SearchTerm2);
   return response.data?.d as SapCliente;
 }
 
 /**
- * Busca un cliente en SAP por su RUT (número de identificación fiscal).
+ * Busca un cliente en SAP por su RUT
  *
  * @param rut - RUT del cliente (ej: "12345678-9")
  * @returns Lista de clientes que coinciden con el RUT
@@ -164,7 +168,7 @@ export async function obtenerCsrfToken(): Promise<{ token: string; cookies: stri
 
   const response = await cliente.get('/', {
     params: { $format: 'json' },
-    headers: { 'X-CSRF-Token': 'Fetch' },
+    headers: { 'X-CSRF-Token': 'Fetch', 'Accept': '*/*' },
   });
 
   const token = response.headers['x-csrf-token'] as string;
@@ -234,15 +238,23 @@ export async function crearClienteSap(params: SapCrearClienteParams): Promise<st
 
   // Mapear los campos del formulario al formato SAP API_BUSINESS_PARTNER
   const body = {
-    BusinessPartnerCategory: '2',           // 2 = Empresa/Organización
-    BusinessPartnerGrouping: '0001',        // Grupo deudor Cooprinsem
-    BusinessPartnerType: '0003',            // Tipo interlocutor comercial
-    OrganizationBPName1: params.nombre,     // Nombre 1 de la empresa
-    OrganizationBPName2: params.nombre2 ?? '', // Nombre 2
-    SearchTerm1: params.rut,                // Concepto búsqueda 1 = RUT
-    SearchTerm2: params.conceptoBusqueda,   // Concepto búsqueda 2
-    Industry: params.giro,                  // Ramo/Giro
-    FormOfAddress: '0003',                  // Tratamiento (0003 = empresa)
+    BusinessPartnerCategory: params.tipoSocio,  // 1=Persona, 2=Organización
+    BusinessPartnerGrouping: '0001',             // Grupo deudor Cooprinsem
+    BusinessPartnerType: '0003',                 // Tipo interlocutor comercial
+    ...((() => { console.log('[crearClienteSap] tipoSocio:', params.tipoSocio); return params.tipoSocio === '1'; })() ? {
+      LastName: params.nombre,                     // Apellidos (Persona)
+      FirstName: params.nombre2 ?? '',             // Nombre (Persona)
+    } : {
+      OrganizationBPName1: params.nombre,          // Nombre 1 (Organización)
+      OrganizationBPName2: params.nombre2 ?? '',   // Nombre 2 (Organización)
+    }),
+    SearchTerm1: params.rut,                     // Concepto búsqueda 1 = RUT
+    SearchTerm2: params.conceptoBusqueda,        // Concepto búsqueda 2
+    Industry: params.giro,                       // Ramo/Giro
+    FormOfAddress: params.tratamiento === 'Señora' ? '0001'
+      : params.tratamiento === 'Señor' ? '0002'
+        : params.tratamiento === 'Empresa' ? '0003'
+          : '0004',                                  // Señor y señora
     to_BusinessPartnerAddress: {
       results: [
         {
@@ -286,7 +298,10 @@ export async function crearClienteSap(params: SapCrearClienteParams): Promise<st
       if (params.telefono) {
         await cliente.post('/A_AddressPhoneNumber', {
           AddressID: addressID,
+          Person: businessPartner.padStart(10, '0'),
+          OrdinalNumber: '1',
           PhoneNumber: params.telefono,
+          PhoneNumberType: '2',
           IsDefaultPhoneNumber: true,
         }, { headers: contactHeaders });
       }
@@ -304,14 +319,19 @@ export async function crearClienteSap(params: SapCrearClienteParams): Promise<st
         }, { headers: contactHeaders });
       }
       if (params.correoFactura || params.correoContacto) {
-        await cliente.post('/A_AddressEmailAddress', {
-          AddressID: addressID,
-          EmailAddress: params.correoFactura ?? params.correoContacto ?? '',
-          IsDefaultEmailAddress: true,
-        }, { headers: contactHeaders });
-      }
+      await cliente.post('/A_AddressEmailAddress', {
+        AddressID: addressID,
+        Person: businessPartner.padStart(10, '0'),
+        OrdinalNumber: '1',
+        EmailAddress: params.correoFactura ?? params.correoContacto ?? '',
+        IsDefaultEmailAddress: true,
+      }, { headers: contactHeaders });
+    }
     } catch (contactErr: any) {
       console.error('[crearClienteSap] Error en datos contacto:', JSON.stringify(contactErr?.response?.data ?? contactErr?.message));
+      console.error('[crearClienteSap] Status:', contactErr?.response?.status);
+      console.error('[crearClienteSap] URL:', contactErr?.config?.url);
+      console.error('[crearClienteSap] Body enviado:', JSON.stringify(contactErr?.config?.data));
     }
   }
 

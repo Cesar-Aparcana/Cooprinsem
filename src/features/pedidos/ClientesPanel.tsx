@@ -681,10 +681,10 @@ export function ClientesPanel() {
                       Línea de crédito (MS)
                     </Label>
                     <div style={{ display: 'grid', gap: '0.3rem' }}>
-                      {renderCampo('Aprobado', formatCLP(clienteFicha.creditoAsignado))}
-                      {renderCampo('Disponible', formatCLP(Math.max(0, clienteFicha.creditoAsignado - clienteFicha.creditoUtilizado)))}
-                      {renderCampo('Utilizado', formatCLP(clienteFicha.creditoUtilizado))}
-                      {renderCampo('Total', formatCLP(clienteFicha.creditoAsignado))}
+                      {renderCampo('Aprobado', formatCLP(0))}
+                      {renderCampo('Disponible', formatCLP(0))}
+                      {renderCampo('Utilizado', formatCLP(0))}
+                      {renderCampo('Total', formatCLP(0))}
                     </div>
                   </div>
                 </Card>

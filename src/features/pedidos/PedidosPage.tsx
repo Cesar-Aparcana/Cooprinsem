@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Button, MessageStrip } from '@ui5/webcomponents-react'
 import '@ui5/webcomponents-icons/dist/cart.js'
 import '@ui5/webcomponents-icons/dist/document-text.js'
@@ -24,7 +25,8 @@ const MENU_PEDIDOS = [
 ] as const
 
 export function PedidosPage() {
-  const [moduloActivo, setModuloActivo] = useState('clientes')
+  const location = useLocation()
+  const [moduloActivo, setModuloActivo] = useState(location.state?.modulo || 'clientes')
 
   return (
     <div style={{ display: 'flex', height: '100%' }}>

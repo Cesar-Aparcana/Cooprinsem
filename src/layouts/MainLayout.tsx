@@ -76,7 +76,7 @@ export function MainLayout() {
             text="Volver"
             onClick={() => {
               if (location.pathname === '/pedidos/nuevo') {
-                navigate('/pedidos')
+                navigate('/pedidos', { state: { modulo: 'pedidos' } })
               } else {
                 navigate(-1)
               }

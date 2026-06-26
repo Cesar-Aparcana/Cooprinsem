@@ -7,6 +7,7 @@ import '@ui5/webcomponents-icons/dist/cart.js'
 import '@ui5/webcomponents-icons/dist/money-bills.js'
 import '@ui5/webcomponents-icons/dist/settings.js'
 import '@ui5/webcomponents-icons/dist/log.js'
+import '@ui5/webcomponents-icons/dist/nav-back.js'
 import { useUser } from '@/stores/userContext'
 import { ROLES } from '@/config/sap'
 
@@ -67,6 +68,19 @@ export function MainLayout() {
             text="Administración"
             data-path="/admin"
             onClick={() => navigate('/admin')}
+          />
+        )}
+        {['/pedidos/nuevo'].includes(location.pathname) && (
+          <ShellBarItem
+            icon="nav-back"
+            text="Volver"
+            onClick={() => {
+              if (location.pathname === '/pedidos/nuevo') {
+                navigate('/pedidos')
+              } else {
+                navigate(-1)
+              }
+            }}
           />
         )}
         <ShellBarItem

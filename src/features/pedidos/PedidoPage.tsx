@@ -148,6 +148,7 @@ export function PedidoPage() {
         <MessageBox
           type="Error"
           open
+          titleText="Error SAP"
           onClose={() => setShowError(false)}
         >
           {error}

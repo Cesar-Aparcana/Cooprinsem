@@ -68,3 +68,46 @@ export async function getSapStock(params: SapStockQueryParams = {}): Promise<Sap
   const json: SapStockResponse = await response.json();
   return json.data;
 }
+
+/**
+ * Busca materiales en SAP por código o descripción para el buscador de artículos.
+ * Retorna los resultados mapeados al formato IArticulo del frontend.
+ *
+ * Nota: ZSB_STOCK no devuelve precio — se envía 0 y la simulación SAP
+ * determinará el precio real al validar el pedido.
+ */
+export async function buscarMaterialesSap(
+  texto: string,
+  centro: string = 'D190'
+): Promise<import('@/types/articulo').IArticulo[]> {
+  const url = `${API_BASE_URL}/api/sap-stock/buscar?q=${encodeURIComponent(texto)}&plant=${centro}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Error al buscar materiales en SAP: ${response.status}`);
+  }
+
+  const json: SapStockResponse = await response.json();
+
+  // Deduplicar por Material (puede venir en varios almacenes del mismo centro)
+  const porMaterial = new Map<string, import('@/types/articulo').IArticulo>();
+  for (const r of json.data) {
+    const existing = porMaterial.get(r.Material);
+    const stock = Number(r.UnrestrictedStock) || 0;
+    if (existing) {
+      existing.stockDisponible += stock;
+    } else {
+      porMaterial.set(r.Material, {
+        codigoMaterial: r.Material,
+        descripcion: r.MaterialDescription || r.Material,
+        precioUnitario: 0,
+        unidadMedida: r.BaseUnit || 'UN',
+        stockDisponible: stock,
+        centro: r.Plant,
+        almacen: r.StorageLocation || '',
+      });
+    }
+  }
+
+  return Array.from(porMaterial.values());
+}

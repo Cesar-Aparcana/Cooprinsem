@@ -4,6 +4,48 @@ import { consultarStock, StockQueryParams } from './sapStockService';
 const router = Router();
 
 /**
+ * GET /api/sap-stock/buscar
+ *
+ * Busca materiales en SAP por código o descripción para el buscador de artículos.
+ * Retorna materiales con stock > 0 en el centro indicado, filtrados por texto.
+ *
+ * Query params:
+ *   - q     → texto de búsqueda (código o descripción)
+ *   - plant → código de centro (por defecto D190)
+ */
+router.get('/buscar', async (req: Request, res: Response) => {
+  try {
+    const q = (req.query.q as string ?? '').trim();
+    const plant = (req.query.plant as string) || 'D190';
+
+    if (q.length < 2) {
+      res.json({ success: true, data: [] });
+      return;
+    }
+
+    const stock = await consultarStock({
+      plant,
+      soloConStock: false,
+      buscarTexto: q,
+      top: 200,
+    });
+
+    res.json({
+      success: true,
+      total: stock.length,
+      data: stock,
+    });
+  } catch (error: any) {
+    console.error('[GET /api/sap-stock/buscar] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Error al buscar materiales en SAP',
+      detail: error.message,
+    });
+  }
+});
+
+/**
  * GET /api/sap-stock
  *
  * Consulta el stock de materiales usando la API personalizada ZSB_STOCK de Cooprinsem.

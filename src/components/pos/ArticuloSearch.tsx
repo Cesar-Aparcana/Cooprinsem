@@ -1,8 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { Input, SuggestionItem } from '@ui5/webcomponents-react'
 import type { IArticulo } from '@/types/articulo'
-import { buscarMateriales } from '@/services/api/materiales'
-import { formatCLP } from '@/utils/format'
+import { buscarMaterialesSap } from '@/services/api/sapStock'
 
 interface ArticuloSearchProps {
   onArticuloSeleccionado: (articulo: IArticulo) => void
@@ -30,12 +29,15 @@ export function ArticuloSearch({
         return
       }
       timerRef.current = setTimeout(async () => {
+        console.log('Buscando en SAP:', texto)
         setIsLoading(true)
         try {
-          const results = await buscarMateriales(texto, centro)
+          const results = await buscarMaterialesSap(texto, centro)
+          console.log('Resultados SAP:', results)
           sugerenciasRef.current = results
           setSugerencias(results)
-        } catch {
+        } catch (err) {
+          console.error('Error buscando en SAP:', err)
           sugerenciasRef.current = []
           setSugerencias([])
         } finally {
@@ -49,6 +51,7 @@ export function ArticuloSearch({
   const handleInput = (e: CustomEvent) => {
     const target = e.target as HTMLInputElement
     const val = target?.value ?? ''
+    console.log('handleInput:', val)
     setQuery(val)
     buscar(val)
   }
@@ -80,7 +83,7 @@ export function ArticuloSearch({
         <SuggestionItem
           key={a.codigoMaterial}
           text={`${a.codigoMaterial} - ${a.descripcion}`}
-          additionalText={`${formatCLP(a.precioUnitario)} | Stock: ${a.stockDisponible} ${a.unidadMedida}`}
+          additionalText={`Stock: ${a.stockDisponible} ${a.unidadMedida}`}
         />
       ))}
     </Input>

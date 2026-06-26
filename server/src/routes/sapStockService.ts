@@ -29,6 +29,7 @@ export interface StockQueryParams {
   storageLocation?: string;
   soloConStock?: boolean;  // Si true, solo retorna materiales con UnrestrictedStock > 0
   top?: number;
+  buscarTexto?: string;  // Busca por código o descripción (filtrado server-side)
 }
 
 // ─── Agente HTTPS ─────────────────────────────────────────────────────────────
@@ -106,5 +107,17 @@ export async function consultarStock(params: StockQueryParams): Promise<SapStock
 
   // La API OData de SAP envuelve los resultados en d.results
   const resultados: SapStockRecord[] = response.data?.d?.results ?? [];
+
+  // Filtrado server-side por texto (código o descripción)
+  // Se hace aquí porque la API custom ZSB_STOCK puede no soportar substringof
+  if (params.buscarTexto) {
+    const texto = params.buscarTexto.toLowerCase();
+    return resultados.filter(
+      (r) =>
+        r.Material.toLowerCase().includes(texto) ||
+        r.MaterialDescription.toLowerCase().includes(texto)
+    );
+  }
+
   return resultados;
 }

@@ -337,3 +337,37 @@ export async function crearClienteSap(params: SapCrearClienteParams): Promise<st
 
   return businessPartner;
 }
+
+/**
+ * Obtiene los datos completos de un cliente para la Ficha.
+ * Expande las navegaciones de SAP para traer dirección, datos de cliente,
+ * crédito, contactos y relaciones en una sola llamada.
+ */
+export async function obtenerFichaCliente(businessPartner: string): Promise<Record<string, any>> {
+  const cliente = crearClienteAxios();
+
+  const bp = businessPartner.padStart(10, '0');
+
+  const response = await cliente.get(
+    `/A_BusinessPartner('${bp}')`,
+    {
+      params: {
+        $format: 'json',
+        $expand: 'to_Customer,to_BusinessPartnerAddress,to_BusinessPartnerContact,to_BPRelationship',
+      },
+    }
+  );
+
+  const data = response.data?.d ?? {};
+
+  // También obtener el RUT completo desde A_Customer
+  let rutCompleto = '';
+  try {
+    rutCompleto = await obtenerRutCliente(bp);
+  } catch {
+    // Si falla, usar SearchTerm1
+    rutCompleto = data.SearchTerm1 ?? '';
+  }
+
+  return { ...data, TaxNumber1: rutCompleto };
+}

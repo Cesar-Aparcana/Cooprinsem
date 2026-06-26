@@ -5,6 +5,7 @@ import {
   obtenerDireccionCliente,
   obtenerRutCliente,
   crearClienteSap,
+  obtenerFichaCliente,
   SapCrearClienteParams,
 } from './sapClientesService';
 
@@ -64,6 +65,26 @@ router.get('/buscar', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /api/sap-clientes/ficha/:bp
+ *
+ * Obtiene los datos completos de un cliente desde SAP para la pantalla Ficha.
+ * Expande dirección, datos de cliente, contactos y relaciones.
+ */
+router.get('/ficha/:bp', async (req: Request, res: Response) => {
+  try {
+    const bp = req.params.bp as string;
+    const ficha = await obtenerFichaCliente(bp);
+    res.json({ success: true, data: ficha });
+  } catch (error: any) {
+    console.error('[GET /api/sap-clientes/ficha] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener ficha del cliente en SAP',
+      detail: error.message,
+    });
+  }
+});
 /**
  * POST /api/sap-clientes
  *

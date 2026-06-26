@@ -27,6 +27,7 @@ import {
   buscarSapClientePorNumero,
   buscarSapClientePorRut,
   crearSapCliente,
+  obtenerFichaSap,
 } from '@/services/api/sapClientes'
 import { formatCLP, formatRUT } from '@/utils/format'
 import { validarRUT } from '@/utils/validations'
@@ -257,21 +258,43 @@ export function ClientesPanel() {
     setFichaError(null)
     setClienteFicha(null)
     try {
-      // Primero buscar por código exacto, si falla buscar por nombre/RUT
-      let result: ICliente | null = null
-      try {
-        result = await getCliente(fichaCodigo.trim())
-      } catch {
-        const resultados = await buscarClientes(fichaCodigo.trim())
-        if (resultados.length > 0) result = resultados[0]
+      const sap = await obtenerFichaSap(fichaCodigo.trim())
+      const direccion = sap.to_BusinessPartnerAddress?.results?.[0] ?? {}
+      const customer = sap.to_Customer ?? {}
+
+      const result: ICliente = {
+        codigoCliente: sap.BusinessPartner ?? '',
+        nombre: sap.BusinessPartnerFullName ?? sap.BusinessPartnerName ?? '',
+        rut: sap.TaxNumber1 ?? sap.SearchTerm1 ?? '',
+        condicionPago: customer.PaymentTerms ?? '',
+        estadoCredito: 'AL_DIA',
+        creditoAsignado: 0,
+        creditoUtilizado: 0,
+        porcentajeAgotamiento: 0,
+        sucursal: 'D190',
+        tratamiento: sap.FormOfAddress ?? '',
+        nombre2: sap.OrganizationBPName2 ?? sap.FirstName ?? '',
+        conceptoBusqueda: sap.SearchTerm2 ?? '',
+        giro: sap.Industry ?? '',
+        direccion: direccion.StreetName ?? '',
+        region: direccion.Region ?? '',
+        ciudad: direccion.CityName ?? '',
+        comuna: direccion.District ?? direccion.CityName ?? '',
+        zonaTransporte: '',
+        telefono: direccion.PhoneNumber ?? '',
+        celular: direccion.MobilePhoneNumber ?? '',
+        correoFactura: direccion.EmailAddress ?? '',
+        razonSocial: sap.BusinessPartnerFullName ?? '',
+        clasificacionComercial: sap.Industry ?? '',
+        representanteLegal: '',
+        seguro: '',
+        grupoControlCredito: customer.CustomerCreditGroup ?? '',
       }
-      if (result) {
-        setClienteFicha(result)
-      } else {
-        setFichaError(`Cliente ${fichaCodigo} no encontrado`)
-      }
-    } catch {
-      setFichaError(`Cliente ${fichaCodigo} no encontrado`)
+
+      setClienteFicha(result)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido'
+      setFichaError(`Cliente ${fichaCodigo} no encontrado en SAP: ${msg}`)
     } finally {
       setFichaLoading(false)
     }
@@ -681,10 +704,10 @@ export function ClientesPanel() {
                       Línea de crédito (MS)
                     </Label>
                     <div style={{ display: 'grid', gap: '0.3rem' }}>
-                      {renderCampo('Aprobado', formatCLP(0))}
-                      {renderCampo('Disponible', formatCLP(0))}
-                      {renderCampo('Utilizado', formatCLP(0))}
-                      {renderCampo('Total', formatCLP(0))}
+                      {renderCampo('Aprobado', formatCLP(clienteFicha.creditoAsignado))}
+                      {renderCampo('Disponible', formatCLP(Math.max(0, clienteFicha.creditoAsignado - clienteFicha.creditoUtilizado)))}
+                      {renderCampo('Utilizado', formatCLP(clienteFicha.creditoUtilizado))}
+                      {renderCampo('Total', formatCLP(clienteFicha.creditoAsignado))}
                     </div>
                   </div>
                 </Card>

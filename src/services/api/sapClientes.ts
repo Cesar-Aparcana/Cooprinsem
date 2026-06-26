@@ -128,3 +128,18 @@ export async function crearSapCliente(params: SapCrearClienteParams): Promise<st
   const json: CrearClienteResponse = await response.json();
   return json.businessPartner;
 }
+
+/**
+ * Obtiene los datos completos de un cliente desde SAP para la pantalla Ficha.
+ */
+export async function obtenerFichaSap(bp: string): Promise<Record<string, any>> {
+  const response = await fetch(`${API_BASE_URL}/api/sap-clientes/ficha/${encodeURIComponent(bp)}`);
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error((error as any).message ?? `Error obteniendo ficha: ${response.status}`);
+  }
+
+  const json = await response.json();
+  return json.data;
+}

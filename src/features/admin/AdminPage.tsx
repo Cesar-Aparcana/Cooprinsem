@@ -298,7 +298,7 @@ export function AdminPage() {
                 <Title level="H3">Gestión de Usuarios</Title>
                 <Button icon="add-employee" design="Emphasized" onClick={handleNuevoUsuario}>Nuevo Usuario</Button>
               </FlexBox>
-              <Table headerRow={<TableHeaderRow><TableHeaderCell>Usuario</TableHeaderCell><TableHeaderCell>Nombre Completo</TableHeaderCell><TableHeaderCell>Email</TableHeaderCell><TableHeaderCell>Rol</TableHeaderCell><TableHeaderCell>Sucursal</TableHeaderCell><TableHeaderCell>Estado</TableHeaderCell><TableHeaderCell>Acciones</TableHeaderCell></TableHeaderRow>}>
+              <Table headerRow={<TableHeaderRow><TableHeaderCell>Usuario</TableHeaderCell><TableHeaderCell>Nombre Completo</TableHeaderCell><TableHeaderCell>Email</TableHeaderCell><TableHeaderCell>Rol</TableHeaderCell><TableHeaderCell>Oficina Venta</TableHeaderCell><TableHeaderCell>Estado</TableHeaderCell><TableHeaderCell>Acciones</TableHeaderCell></TableHeaderRow>}>
                 {usuarios.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>{user.username}</TableCell>
@@ -567,7 +567,7 @@ export function AdminPage() {
               </Select>
             </FormItem>
             <FormItem>
-              <Label>Sucursal</Label>
+              <Label>Oficina Venta</Label>
               <Select onChange={(e) => { const val = e.detail.selectedOption?.getAttribute('data-id'); if (val) setFormSucursal(val) }}>
                 <Option data-id="D190" selected={formSucursal === 'D190'}>D190 — Osorno</Option>
                 <Option data-id="D052" selected={formSucursal === 'D052'}>D052 — Puerto Montt</Option>
@@ -582,7 +582,7 @@ export function AdminPage() {
               </Select>
             </FormItem>
             <FormItem>
-              <Label>Centros asignados</Label>
+              <Label>Centro Suministro</Label>
               <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--sapField_BorderColor)', borderRadius: '4px', padding: '0.5rem', width: '100%' }}>
                 {todosCentros.length === 0 ? (
                   <span style={{ color: 'var(--sapNeutralColor)', fontSize: '0.875rem' }}>Cargando centros...</span>

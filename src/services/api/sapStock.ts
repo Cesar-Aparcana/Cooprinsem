@@ -98,7 +98,7 @@ export async function buscarMaterialesSap(
       existing.stockDisponible += stock;
     } else {
       porMaterial.set(r.Material, {
-        codigoMaterial: r.Material,
+        codigoMaterial: r.Material.replace(/^0+/, ''),
         descripcion: r.MaterialDescription || r.Material,
         precioUnitario: 0,
         unidadMedida: r.BaseUnit || 'UN',

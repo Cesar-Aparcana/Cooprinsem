@@ -61,7 +61,7 @@ export async function consultarStock(params: StockQueryParams): Promise<SapStock
 
   // Construir la URL base para ZSB_STOCK a partir del host del servidor SAP
   const sapHost = SAP_BASE_URL.replace('/sap/opu/odata/sap/API_MATERIAL_STOCK_SRV', '');
-  const zStockUrl = `${sapHost}/sap/opu/odata/sap/ZSB_STOCK`;
+  const zStockUrl = `${sapHost}/sap/opu/odata/sap/ZUI_STOCK_SRV`;
 
   // Construir filtros OData según los parámetros recibidos
   const filtros: string[] = [];
@@ -89,7 +89,7 @@ export async function consultarStock(params: StockQueryParams): Promise<SapStock
   const select = 'Material,MaterialDescription,Plant,PlantName,StorageLocation,UnrestrictedStock,QualityInspectionStock,BlockedStock,BaseUnit';
   const top = String(params.top ?? 100);
 
-  let urlCompleta = `${zStockUrl}/MaterialStock?$select=${select}&$top=${top}&$format=json&sap-client=200`;
+  let urlCompleta = `${zStockUrl}/MaterialStockSet?$select=${select}&$top=${top}&$format=json&sap-client=200`;
 
   if (filtros.length > 0) {
     urlCompleta += `&$filter=${encodeURIComponent(filtros.join(' and '))}`;

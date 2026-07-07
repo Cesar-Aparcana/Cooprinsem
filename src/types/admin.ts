@@ -3,6 +3,7 @@
 export interface IUsuarioAdmin {
   id: string
   username: string        // ej: "vendedor"
+  rut: string             // ej: "12.345.678-9"
   nombreCompleto: string
   email: string
   rolCod: 1 | 2 | 3 | 4
@@ -15,6 +16,7 @@ export interface IUsuarioAdmin {
 export interface ICreateUsuarioRequest {
   username: string
   password: string
+  rut?: string
   nombreCompleto: string
   email: string
   rolCod: 1 | 2 | 3 | 4
@@ -23,6 +25,7 @@ export interface ICreateUsuarioRequest {
 }
 
 export interface IUpdateUsuarioRequest {
+  rut?: string
   nombreCompleto?: string
   email?: string
   rolCod?: 1 | 2 | 3 | 4

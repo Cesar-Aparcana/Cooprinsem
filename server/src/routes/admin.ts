@@ -8,12 +8,12 @@ const ROLES_NOMBRES: Record<number, string> = { 1: 'Administrador', 2: 'Ventas',
 const SUCURSALES_NOMBRES: Record<string, string> = { D190: 'Osorno', D052: 'Puerto Montt', D014: 'Temuco' };
 
 const USUARIOS_MOCK = [
-  { id: 'usr-001', username: 'admin', nombreCompleto: 'Admin Sistema', email: 'admin@cooprinsem.cl', rolCod: 1, rolNombre: 'Administrador', sucursalId: 'D190', sucursalNombre: 'Osorno', estado: 1 },
-  { id: 'usr-002', username: 'vendedor', nombreCompleto: 'Juan Vendedor López', email: 'jvendedor@cooprinsem.cl', rolCod: 2, rolNombre: 'Ventas', sucursalId: 'D190', sucursalNombre: 'Osorno', estado: 1 },
-  { id: 'usr-003', username: 'cajero', nombreCompleto: 'María Cajero Soto', email: 'mcajero@cooprinsem.cl', rolCod: 3, rolNombre: 'Caja', sucursalId: 'D190', sucursalNombre: 'Osorno', estado: 1 },
-  { id: 'usr-004', username: 'consulta', nombreCompleto: 'Pedro Consultas Muñoz', email: 'pconsultas@cooprinsem.cl', rolCod: 4, rolNombre: 'Consultas', sucursalId: 'D190', sucursalNombre: 'Osorno', estado: 1 },
-  { id: 'usr-005', username: 'vendedor2', nombreCompleto: 'Ana Vendedor Ríos', email: 'avendedor@cooprinsem.cl', rolCod: 2, rolNombre: 'Ventas', sucursalId: 'D052', sucursalNombre: 'Puerto Montt', estado: 2 },
-  { id: 'usr-006', username: 'cajero2', nombreCompleto: 'Luis Cajero Vera', email: 'lcajero@cooprinsem.cl', rolCod: 3, rolNombre: 'Caja', sucursalId: 'D014', sucursalNombre: 'Temuco', estado: 1 },
+  { id: 'usr-001', username: 'admin', rut: '11.111.111-1', nombreCompleto: 'Admin Sistema', email: 'admin@cooprinsem.cl', rolCod: 1, rolNombre: 'Administrador', sucursalId: 'D190', sucursalNombre: 'Osorno', estado: 1 },
+  { id: 'usr-002', username: 'vendedor', rut: '22.222.222-2', nombreCompleto: 'Juan Vendedor López', email: 'jvendedor@cooprinsem.cl', rolCod: 2, rolNombre: 'Ventas', sucursalId: 'D190', sucursalNombre: 'Osorno', estado: 1 },
+  { id: 'usr-003', username: 'cajero', rut: '33.333.333-3', nombreCompleto: 'María Cajero Soto', email: 'mcajero@cooprinsem.cl', rolCod: 3, rolNombre: 'Caja', sucursalId: 'D190', sucursalNombre: 'Osorno', estado: 1 },
+  { id: 'usr-004', username: 'consulta', rut: '44.444.444-4', nombreCompleto: 'Pedro Consultas Muñoz', email: 'pconsultas@cooprinsem.cl', rolCod: 4, rolNombre: 'Consultas', sucursalId: 'D190', sucursalNombre: 'Osorno', estado: 1 },
+  { id: 'usr-005', username: 'vendedor2', rut: '55.555.555-5', nombreCompleto: 'Ana Vendedor Ríos', email: 'avendedor@cooprinsem.cl', rolCod: 2, rolNombre: 'Ventas', sucursalId: 'D052', sucursalNombre: 'Puerto Montt', estado: 2 },
+  { id: 'usr-006', username: 'cajero2', rut: '66.666.666-6', nombreCompleto: 'Luis Cajero Vera', email: 'lcajero@cooprinsem.cl', rolCod: 3, rolNombre: 'Caja', sucursalId: 'D014', sucursalNombre: 'Temuco', estado: 1 },
 ];
 
 const ROLES_MOCK = [
@@ -36,7 +36,7 @@ router.get('/usuarios', (_req: Request, res: Response) => {
 
 // POST /api/admin/usuarios — crear usuario
 router.post('/usuarios', (req: Request, res: Response) => {
-  const { username, nombreCompleto, email, rolCod, sucursalId, estado } = req.body;
+  const { username, rut, nombreCompleto, email, rolCod, sucursalId, estado } = req.body;
 
   if (!username || !nombreCompleto) {
     res.status(400).json({ error: 'username y nombreCompleto son requeridos' });
@@ -46,6 +46,7 @@ router.post('/usuarios', (req: Request, res: Response) => {
   const nuevoUsuario = {
     id: `usr-${Date.now()}`,
     username,
+    rut: rut ?? '',
     nombreCompleto,
     email: email ?? '',
     rolCod: rolCod ?? 2,
@@ -69,11 +70,12 @@ router.put('/usuarios/:id', (req: Request, res: Response) => {
     return;
   }
 
-  const { nombreCompleto, email, rolCod, sucursalId, estado } = req.body;
+  const { rut, nombreCompleto, email, rolCod, sucursalId, estado } = req.body;
   const existing = USUARIOS_MOCK[idx];
 
   const updated = {
     ...existing,
+    ...(rut !== undefined && { rut }),
     ...(nombreCompleto !== undefined && { nombreCompleto }),
     ...(email !== undefined && { email }),
     ...(rolCod !== undefined && { rolCod, rolNombre: ROLES_NOMBRES[rolCod] ?? existing.rolNombre }),

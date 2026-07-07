@@ -67,6 +67,7 @@ model Usuario {
   id                    Int      @id @default(autoincrement())
   username              String   @unique @db.VarChar(50)
   password              String   @db.VarChar(100)
+  rut                   String?  @db.VarChar(20)
   nombre_completo       String   @db.VarChar(100)
   email                 String?  @db.VarChar(100)
   rol_cod               Int      @default(2)

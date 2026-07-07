@@ -112,6 +112,47 @@ router.get('/sucursales', (_req: Request, res: Response) => {
   res.json({ d: { results: SUCURSALES_MOCK } });
 });
 
+// GET /api/admin/usuarios/:username/sociedades — obtener sociedades de un usuario
+router.get('/usuarios/:username/sociedades', asyncHandler(async (req: Request, res: Response) => {
+  const { username } = req.params;
+  const { Pool } = await import('pg');
+  const pool = new Pool({ connectionString: process.env['DATABASE_URL'] });
+
+  try {
+    const result = await pool.query(
+      'SELECT company_code FROM usuario_sociedades WHERE username = $1',
+      [username]
+    );
+    res.json({ d: { results: result.rows.map((r: any) => r.company_code) } });
+  } finally {
+    await pool.end();
+  }
+}));
+
+// POST /api/admin/usuarios/:username/sociedades — asignar sociedades a un usuario
+router.post('/usuarios/:username/sociedades', asyncHandler(async (req: Request, res: Response) => {
+  const { username } = req.params;
+  const { sociedades } = req.body as { sociedades: string[] };
+  const { Pool } = await import('pg');
+  const pool = new Pool({ connectionString: process.env['DATABASE_URL'] });
+
+  try {
+    await pool.query('DELETE FROM usuario_sociedades WHERE username = $1', [username]);
+
+    if (sociedades && sociedades.length > 0) {
+      const values = sociedades.map((s: string, i: number) => `($1, $${i + 2})`).join(', ');
+      await pool.query(
+        `INSERT INTO usuario_sociedades (username, company_code) VALUES ${values}`,
+        [username, ...sociedades]
+      );
+    }
+
+    res.json({ d: { message: 'Sociedades actualizadas', total: sociedades?.length ?? 0 } });
+  } finally {
+    await pool.end();
+  }
+}));
+
 // GET /api/admin/usuarios/:username/centros — obtener centros de un usuario
 router.get('/usuarios/:username/centros', asyncHandler(async (req: Request, res: Response) => {
   const { username } = req.params;

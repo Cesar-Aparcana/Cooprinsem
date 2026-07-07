@@ -108,3 +108,21 @@ export async function setCentrosUsuario(username: string, centros: string[]): Pr
   })
   if (!res.ok) throw new Error(`Error al asignar centros: ${res.status}`)
 }
+
+// Obtener sociedades asignadas a un usuario
+export async function getSociedadesUsuario(username: string): Promise<string[]> {
+  const res = await fetch(`${API_BASE_URL}/api/admin/usuarios/${username}/sociedades`)
+  if (!res.ok) throw new Error(`Error al cargar sociedades: ${res.status}`)
+  const json = await res.json()
+  return json.d.results
+}
+
+// Asignar sociedades a un usuario
+export async function setSociedadesUsuario(username: string, sociedades: string[]): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/admin/usuarios/${username}/sociedades`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sociedades }),
+  })
+  if (!res.ok) throw new Error(`Error al asignar sociedades: ${res.status}`)
+}

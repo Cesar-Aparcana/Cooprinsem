@@ -30,12 +30,14 @@ import '@ui5/webcomponents-icons/dist/activate.js'
 import '@ui5/webcomponents-icons/dist/decline.js'
 import '@ui5/webcomponents-icons/dist/connected.js'
 import '@ui5/webcomponents-icons/dist/database.js'
+import '@ui5/webcomponents-icons/dist/legend.js'
 import type { IUsuarioAdmin, ICreateUsuarioRequest, IUpdateUsuarioRequest, IRol, ISucursal } from '@/types/admin'
 import type { IInterfaz, ISapBanco, ISapCentro, ISapCentroCosto, ISapSociedad, ISapRegion } from '@/types/sapMaestro'
 import { getUsuarios, createUsuario, updateUsuario, toggleEstadoUsuario, getRoles, getSucursales, getCentrosUsuario, setCentrosUsuario, getSociedadesUsuario, setSociedadesUsuario } from '@/services/api/admin'
+import { PosMaestrosPanel } from './PosMaestrosPanel'
 import { getInterfases, getSapBancos, getSapCentros, getSapCentrosCosto, getSapSociedades, getSapRegiones } from '@/services/api/sapMaestro'
 
-type TabActiva = 'usuarios' | 'roles' | 'sucursales' | 'interfases' | 'tablas-sap'
+type TabActiva = 'usuarios' | 'roles' | 'sucursales' | 'interfases' | 'tablas-sap' | 'maestros-pos'
 type TabSap = 'bancos' | 'centros' | 'centros-costo' | 'sociedades' | 'regiones'
 
 const MENU_ADMIN = [
@@ -44,6 +46,7 @@ const MENU_ADMIN = [
   { id: 'sucursales' as TabActiva, label: 'Sucursales', icon: 'building' },
   { id: 'interfases' as TabActiva, label: 'Interfases', icon: 'connected' },
   { id: 'tablas-sap' as TabActiva, label: 'Tablas SAP', icon: 'database' },
+  { id: 'maestros-pos' as TabActiva, label: 'Maestros POS', icon: 'legend' },
 ] as const
 
 const TIPOS_INTERFAZ: Record<number, string> = {
@@ -141,6 +144,8 @@ export function AdminPage() {
         .then(setBancos)
         .catch((e: Error) => setError(e.message))
         .finally(() => setIsLoading(false))
+    } else {
+      setIsLoading(false)
     }
   }, [tabActiva])
 
@@ -550,6 +555,8 @@ export function AdminPage() {
               </MessageStrip>
             </div>
           )}
+
+          {tabActiva === 'maestros-pos' && <PosMaestrosPanel />}
 
         </BusyIndicator>
 

@@ -28,6 +28,7 @@ export function PedidoPage() {
     deseleccionarCliente,
     agregarArticulo,
     actualizarCantidad,
+    cambiarLinea,
     eliminarLinea,
     limpiar,
     grabar,
@@ -109,6 +110,7 @@ export function PedidoPage() {
         <ArticuloGrid
           lineas={lineas}
           onCantidadChange={actualizarCantidad}
+          onLineaChange={cambiarLinea}
           onEliminarLinea={eliminarLinea}
           stockInfo={stockInfo}
         />

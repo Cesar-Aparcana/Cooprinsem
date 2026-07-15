@@ -15,13 +15,15 @@ import { formatCLP } from '@/utils/format'
 interface ArticuloGridProps {
   lineas: ILineaPedido[]
   onCantidadChange: (posicion: string, cantidad: number) => void
+  onLineaChange: (posicion: string, campo: Partial<ILineaPedido>) => void
   onEliminarLinea: (posicion: string) => void
-  stockInfo?: Record<string, number> // codigoMaterial -> stock disponible
+  stockInfo?: Record<string, number>
 }
 
 export function ArticuloGrid({
   lineas,
   onCantidadChange,
+  onLineaChange,
   onEliminarLinea,
   stockInfo,
 }: ArticuloGridProps) {
@@ -42,7 +44,12 @@ export function ArticuloGrid({
           <TableHeaderCell>Descripción</TableHeaderCell>
           <TableHeaderCell>Cantidad</TableHeaderCell>
           <TableHeaderCell>UM</TableHeaderCell>
+          <TableHeaderCell>Centro Sum.</TableHeaderCell>
+          <TableHeaderCell>Almacén</TableHeaderCell>
           <TableHeaderCell>Precio</TableHeaderCell>
+          <TableHeaderCell>Desc. %</TableHeaderCell>
+          <TableHeaderCell>Recargo</TableHeaderCell>
+          <TableHeaderCell>Fe. Entrega</TableHeaderCell>
           <TableHeaderCell>Subtotal</TableHeaderCell>
           <TableHeaderCell>Acciones</TableHeaderCell>
         </TableHeaderRow>
@@ -74,7 +81,55 @@ export function ArticuloGrid({
               />
             </TableCell>
             <TableCell>{linea.unidadMedida}</TableCell>
+            <TableCell>
+              <Input
+                value={linea.centroSuministrador}
+                onInput={(e: { target: { value: string } }) => onLineaChange(linea.posicion, { centroSuministrador: e.target.value })}
+                style={{ width: '5rem' }}
+                placeholder="D190"
+                aria-label="Centro suministrador"
+              />
+            </TableCell>
+            <TableCell>
+              <Input
+                value={linea.almacen}
+                onInput={(e: { target: { value: string } }) => onLineaChange(linea.posicion, { almacen: e.target.value })}
+                style={{ width: '5rem' }}
+                placeholder="B000"
+                aria-label="Almacén"
+              />
+            </TableCell>
             <TableCell>{formatCLP(linea.precioUnitario)}</TableCell>
+            <TableCell>
+              <Input
+                type="Number"
+                value={String(linea.descuentoLinea || '')}
+                onInput={(e: { target: { value: string } }) => onLineaChange(linea.posicion, { descuentoLinea: Number(e.target.value) || 0 })}
+                style={{ width: '4rem' }}
+                placeholder="0"
+                aria-label="Descuento línea"
+              />
+            </TableCell>
+            <TableCell>
+              <Input
+                type="Number"
+                value={String(linea.recargo || '')}
+                onInput={(e: { target: { value: string } }) => onLineaChange(linea.posicion, { recargo: Number(e.target.value) || 0 })}
+                style={{ width: '5rem' }}
+                placeholder="0"
+                aria-label="Recargo"
+              />
+            </TableCell>
+            <TableCell>
+              <Input
+                type="Text"
+                value={linea.fechaEntrega}
+                onInput={(e: { target: { value: string } }) => onLineaChange(linea.posicion, { fechaEntrega: e.target.value })}
+                style={{ width: '7rem' }}
+                placeholder="DD-MM-YYYY"
+                aria-label="Fecha entrega"
+              />
+            </TableCell>
             <TableCell>{formatCLP(linea.subtotal)}</TableCell>
             <TableCell>
               <Button

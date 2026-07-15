@@ -74,6 +74,10 @@ export function usePedido() {
     )
   }, [])
 
+  const cambiarLinea = useCallback((posicion: string, campo: Partial<ILineaPedido>) => {
+    setLineas((prev) => prev.map((l) => l.posicion === posicion ? { ...l, ...campo } : l))
+  }, [])
+  
   // No renumerar posiciones al eliminar (convención SAP)
   const eliminarLinea = useCallback((posicion: string) => {
     setLineas((prev) => prev.filter((l) => l.posicion !== posicion))
@@ -135,6 +139,7 @@ export function usePedido() {
     deseleccionarCliente,
     agregarArticulo,
     actualizarCantidad,
+    cambiarLinea,
     eliminarLinea,
     limpiar,
     grabar,

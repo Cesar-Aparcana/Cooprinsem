@@ -96,6 +96,7 @@ export function PedidoPage() {
         onClienteSeleccionado={seleccionarCliente}
         onClienteDeseleccionado={deseleccionarCliente}
         sucursal={sucursal}
+        vendedor={usuario ? { id: usuario.id, nombre: usuario.nombre } : undefined}
       />
 
       <FlexBox direction="Column" style={{ gap: '1rem' }}>

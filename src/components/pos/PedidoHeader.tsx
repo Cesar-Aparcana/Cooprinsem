@@ -12,6 +12,7 @@ interface PedidoHeaderProps {
   onClienteSeleccionado: (cliente: ICliente) => void
   onClienteDeseleccionado: () => void
   sucursal: string
+  vendedor?: { id: string; nombre: string }
 }
 
 export function PedidoHeader({
@@ -21,6 +22,7 @@ export function PedidoHeader({
   onClienteSeleccionado,
   onClienteDeseleccionado,
   sucursal,
+  vendedor,
 }: PedidoHeaderProps) {
   const [canales, setCanales] = useState<ICanalDistribucion[]>([])
   const [documentos, setDocumentos] = useState<IDocumentoVenta[]>([])
@@ -103,6 +105,12 @@ export function PedidoHeader({
               aria-label="Condición de pago"
             />
           </div>
+          {vendedor && (
+            <div>
+              <Label>Vendedor</Label>
+              <Input value={`${vendedor.id} — ${vendedor.nombre}`} readonly aria-label="Vendedor" />
+            </div>
+          )}
         </FlexBox>
       )}
     </div>

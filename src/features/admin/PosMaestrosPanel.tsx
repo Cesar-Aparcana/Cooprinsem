@@ -23,10 +23,11 @@ import {
   getDocumentosVenta, createDocumentoVenta, updateDocumentoVenta, deleteDocumentoVenta,
   getOficinasVenta, createOficinaVenta, updateOficinaVenta, deleteOficinaVenta,
   getCentrosSuministrador, createCentroSuministrador, updateCentroSuministrador, deleteCentroSuministrador,
-  type IDocumentoVenta, type IOficinaVenta, type ICentroSuministrador,
+  getCanalesDistribucion, createCanalDistribucion, updateCanalDistribucion, deleteCanalDistribucion,
+  type IDocumentoVenta, type IOficinaVenta, type ICentroSuministrador, type ICanalDistribucion,
 } from '@/services/api/posMaestros'
 
-type SubTab = 'documentos' | 'oficinas' | 'centros'
+type SubTab = 'documentos' | 'oficinas' | 'centros' | 'canales'
 
 export function PosMaestrosPanel() {
   const [subTab, setSubTab] = useState<SubTab>('documentos')
@@ -38,10 +39,12 @@ export function PosMaestrosPanel() {
         <Button design={subTab === 'documentos' ? 'Emphasized' : 'Default'} onClick={() => setSubTab('documentos')}>Documentos de Venta</Button>
         <Button design={subTab === 'oficinas' ? 'Emphasized' : 'Default'} onClick={() => setSubTab('oficinas')}>Oficinas de Ventas</Button>
         <Button design={subTab === 'centros' ? 'Emphasized' : 'Default'} onClick={() => setSubTab('centros')}>Centros Suministrador</Button>
+        <Button design={subTab === 'canales' ? 'Emphasized' : 'Default'} onClick={() => setSubTab('canales')}>Canal Distribución</Button>
       </div>
       {subTab === 'documentos' && <DocumentosVentaTab />}
       {subTab === 'oficinas' && <OficinasVentaTab />}
       {subTab === 'centros' && <CentrosSuministradorTab />}
+      {subTab === 'canales' && <CanalesDistribucionTab />}
     </div>
   )
 }
@@ -258,4 +261,17 @@ function OficinasVentaTab() {
 
 function CentrosSuministradorTab() {
   return <TablaCodigoNombre titulo="Centro" getData={getCentrosSuministrador} createData={createCentroSuministrador} updateData={updateCentroSuministrador} deleteData={deleteCentroSuministrador} />
+}
+
+function CanalesDistribucionTab() {
+  return <TablaCodigoNombre
+    titulo="Canal"
+    getData={async () => {
+      const data = await getCanalesDistribucion()
+      return data.map(d => ({ id: d.id, codigo: d.codigo, nombre: d.descripcion, org_ventas: '', canal_distribucion: '', sector: '' }))
+    }}
+    createData={(data: any) => createCanalDistribucion({ codigo: data.codigo, descripcion: data.nombre })}
+    updateData={(id: number, data: any) => updateCanalDistribucion(id, { codigo: data.codigo, descripcion: data.nombre })}
+    deleteData={deleteCanalDistribucion}
+  />
 }

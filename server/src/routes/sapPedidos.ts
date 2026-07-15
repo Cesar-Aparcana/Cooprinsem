@@ -49,7 +49,7 @@ router.post('/validar', asyncHandler(async (req: Request, res: Response) => {
     SalesOrganization: 'COOP',
     DistributionChannel: 'VM',
     OrganizationDivision: '00',
-    SoldToParty: String(cliente).padStart(10, '0'),
+    SoldToParty: String(parseInt(cliente, 10)).padStart(10, '0'),
     PurchaseOrderByCustomer: `POS-${Date.now()}`,
     RequestedDeliveryDate: `/Date(${Date.now()})/`,
     TransactionCurrency: 'CLP',

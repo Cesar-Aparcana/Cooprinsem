@@ -165,3 +165,53 @@ export async function deleteCentroSuministrador(id: number): Promise<void> {
   const res = await fetch(`${API_BASE_URL}/api/pos-maestros/centros-suministrador/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error(`Error: ${res.status}`)
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CANAL DISTRIBUCIÓN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface ICanalDistribucion {
+  id: number
+  codigo: string
+  descripcion: string
+}
+
+export async function getCanalesDistribucion(): Promise<ICanalDistribucion[]> {
+  const res = await fetch(`${API_BASE_URL}/api/pos-maestros/canales-distribucion`)
+  if (!res.ok) throw new Error(`Error: ${res.status}`)
+  const json = await res.json()
+  return json.data
+}
+
+export async function createCanalDistribucion(data: Partial<ICanalDistribucion>): Promise<ICanalDistribucion> {
+  const res = await fetch(`${API_BASE_URL}/api/pos-maestros/canales-distribucion`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message ?? `Error: ${res.status}`)
+  }
+  const json = await res.json()
+  return json.data
+}
+
+export async function updateCanalDistribucion(id: number, data: Partial<ICanalDistribucion>): Promise<ICanalDistribucion> {
+  const res = await fetch(`${API_BASE_URL}/api/pos-maestros/canales-distribucion/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message ?? `Error: ${res.status}`)
+  }
+  const json = await res.json()
+  return json.data
+}
+
+export async function deleteCanalDistribucion(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/pos-maestros/canales-distribucion/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error(`Error: ${res.status}`)
+}

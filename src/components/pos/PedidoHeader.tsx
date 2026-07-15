@@ -1,9 +1,9 @@
+import { useState, useEffect } from 'react'
 import { Select, Option, Input, Label, FlexBox } from '@ui5/webcomponents-react'
 import type { IPedidoHeader } from '@/types/pedido'
 import type { ICliente } from '@/types/cliente'
-import type { CanalDistribucion, TipoDocumentoVenta } from '@/config/sap'
-import { CANALES_DISTRIBUCION, TIPOS_DOCUMENTO_VENTA } from '@/config/sap'
 import { ClienteSearch } from './ClienteSearch'
+import { getCanalesDistribucion, getDocumentosVenta, type ICanalDistribucion, type IDocumentoVenta } from '@/services/api/posMaestros'
 
 interface PedidoHeaderProps {
   header: IPedidoHeader
@@ -22,6 +22,14 @@ export function PedidoHeader({
   onClienteDeseleccionado,
   sucursal,
 }: PedidoHeaderProps) {
+  const [canales, setCanales] = useState<ICanalDistribucion[]>([])
+  const [documentos, setDocumentos] = useState<IDocumentoVenta[]>([])
+
+  useEffect(() => {
+    getCanalesDistribucion().then(setCanales).catch(() => {})
+    getDocumentosVenta().then(setDocumentos).catch(() => {})
+  }, [])
+
   return (
     <div data-testid="pedido-header" style={{ display: 'grid', gap: '0.75rem' }}>
       <FlexBox style={{ gap: '1rem', flexWrap: 'wrap' }}>
@@ -29,14 +37,14 @@ export function PedidoHeader({
           <Label>Canal Distribución</Label>
           <Select
             onChange={(e) => {
-              const val = (e.detail?.selectedOption as HTMLElement)?.textContent ?? ''
-              if (val) onHeaderChange({ canalDistribucion: val as CanalDistribucion })
+              const val = (e.detail?.selectedOption as HTMLElement)?.dataset?.id ?? ''
+              if (val) onHeaderChange({ canalDistribucion: val as any })
             }}
             aria-label="Canal distribución"
           >
-            {CANALES_DISTRIBUCION.map((c) => (
-              <Option key={c} selected={header.canalDistribucion === c}>
-                {c}
+            {canales.map((c) => (
+              <Option key={c.codigo} data-id={c.descripcion} selected={header.canalDistribucion === c.descripcion}>
+                {c.descripcion}
               </Option>
             ))}
           </Select>
@@ -46,14 +54,14 @@ export function PedidoHeader({
           <Label>Tipo Documento</Label>
           <Select
             onChange={(e) => {
-              const val = (e.detail?.selectedOption as HTMLElement)?.textContent ?? ''
-              if (val) onHeaderChange({ tipoDocumento: val as TipoDocumentoVenta })
+              const val = (e.detail?.selectedOption as HTMLElement)?.dataset?.id ?? ''
+              if (val) onHeaderChange({ tipoDocumento: val as any })
             }}
             aria-label="Tipo documento"
           >
-            {TIPOS_DOCUMENTO_VENTA.map((t) => (
-              <Option key={t} selected={header.tipoDocumento === t}>
-                {t}
+            {documentos.map((d) => (
+              <Option key={d.clase_documento} data-id={d.descripcion} selected={header.tipoDocumento === d.descripcion}>
+                {d.descripcion}
               </Option>
             ))}
           </Select>
@@ -81,7 +89,6 @@ export function PedidoHeader({
         />
       </div>
 
-      {/* Campos de solo lectura */}
       {clienteSeleccionado && (
         <FlexBox style={{ gap: '1rem', flexWrap: 'wrap' }}>
           <div>

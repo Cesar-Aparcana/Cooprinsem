@@ -236,4 +236,68 @@ router.delete('/centros-suministrador/:id', async (req: Request, res: Response) 
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// CANAL DISTRIBUCIÓN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/canales-distribucion', async (_req: Request, res: Response) => {
+  const pool = await getPool();
+  try {
+    const result = await pool.query('SELECT * FROM pos_canal_distribucion ORDER BY codigo');
+    res.json({ success: true, data: result.rows });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    await pool.end();
+  }
+});
+
+router.post('/canales-distribucion', async (req: Request, res: Response) => {
+  const { codigo, descripcion } = req.body;
+  const pool = await getPool();
+  try {
+    const result = await pool.query(
+      `INSERT INTO pos_canal_distribucion (codigo, descripcion) VALUES ($1, $2) RETURNING *`,
+      [codigo, descripcion]
+    );
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    await pool.end();
+  }
+});
+
+router.put('/canales-distribucion/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { codigo, descripcion } = req.body;
+  const pool = await getPool();
+  try {
+    const result = await pool.query(
+      `UPDATE pos_canal_distribucion SET codigo=$1, descripcion=$2 WHERE id=$3 RETURNING *`,
+      [codigo, descripcion, id]
+    );
+    if (result.rowCount === 0) { res.status(404).json({ success: false, message: 'No encontrado' }); return; }
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    await pool.end();
+  }
+});
+
+router.delete('/canales-distribucion/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const pool = await getPool();
+  try {
+    const result = await pool.query('DELETE FROM pos_canal_distribucion WHERE id=$1', [id]);
+    if (result.rowCount === 0) { res.status(404).json({ success: false, message: 'No encontrado' }); return; }
+    res.json({ success: true, message: 'Eliminado' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    await pool.end();
+  }
+});
+
 export default router;

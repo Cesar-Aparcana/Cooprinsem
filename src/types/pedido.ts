@@ -9,6 +9,11 @@ export interface ILineaPedido {
   unidadMedida: string
   precioUnitario: number  // en CLP, entero
   subtotal: number        // cantidad × precioUnitario, en CLP
+  centroSuministrador: string  // Centro desde donde se despacha
+  almacen: string              // Almacén dentro del centro
+  recargo: number              // Recargo manual (condición ZR02)
+  descuentoLinea: number       // Descuento manual % por línea (condición ZD02)
+  fechaEntrega: string         // Fecha entrega (RequestedDeliveryDate)
 }
 
 export interface IPedidoHeader {
@@ -18,6 +23,11 @@ export interface IPedidoHeader {
   referencia: string        // O.C. Cliente, texto libre
   observaciones: string     // Observaciones de factura
   ubicacionPredio: string   // Ubicación del predio, texto libre (max 1000)
+  retira: string            // Cliente que retira mercadería (PartnerFunction ZB)
+  descuentoPorcentaje: number  // Descuento manual cabecera % (condición ZD02)
+  patente: string           // Patente vehículo, texto libre
+  despacho: string          // Condición de expedición (VBAK-VSBED)
+  recargoFlete: number      // Monto recargo flete (condición ZFEM)
 }
 
 export interface IPedido {

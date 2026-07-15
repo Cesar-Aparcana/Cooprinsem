@@ -92,26 +92,47 @@ export function PedidoHeader({
       </div>
 
       {clienteSeleccionado && (
-        <FlexBox style={{ gap: '1rem', flexWrap: 'wrap' }}>
-          <div>
-            <Label>Centro</Label>
-            <Input value={sucursal} readonly aria-label="Centro" />
-          </div>
-          <div>
-            <Label>Condición Pago</Label>
-            <Input
-              value={clienteSeleccionado.condicionPago}
-              readonly
-              aria-label="Condición de pago"
-            />
-          </div>
-          {vendedor && (
+        <>
+          <FlexBox style={{ gap: '1rem', flexWrap: 'wrap' }}>
             <div>
-              <Label>Vendedor</Label>
-              <Input value={`${vendedor.id} — ${vendedor.nombre}`} readonly aria-label="Vendedor" />
+              <Label>Centro</Label>
+              <Input value={sucursal} readonly aria-label="Centro" />
             </div>
-          )}
-        </FlexBox>
+            <div>
+              <Label>Condición Pago</Label>
+              <Input value={clienteSeleccionado.condicionPago} readonly aria-label="Condición de pago" />
+            </div>
+            {vendedor && (
+              <div>
+                <Label>Vendedor</Label>
+                <Input value={`${vendedor.id} — ${vendedor.nombre}`} readonly aria-label="Vendedor" />
+              </div>
+            )}
+          </FlexBox>
+
+          <FlexBox style={{ gap: '1rem', flexWrap: 'wrap' }}>
+            <div>
+              <Label>Retira</Label>
+              <Input value={header.retira} onInput={(e: { target: { value: string } }) => onHeaderChange({ retira: e.target.value })} placeholder="Código cliente que retira" aria-label="Retira" />
+            </div>
+            <div>
+              <Label>Descuento %</Label>
+              <Input value={String(header.descuentoPorcentaje || '')} onInput={(e: { target: { value: string } }) => onHeaderChange({ descuentoPorcentaje: Number(e.target.value) || 0 })} placeholder="0" type="Number" aria-label="Descuento porcentaje" />
+            </div>
+            <div>
+              <Label>Patente</Label>
+              <Input value={header.patente} onInput={(e: { target: { value: string } }) => onHeaderChange({ patente: e.target.value })} placeholder="Patente vehículo" aria-label="Patente" />
+            </div>
+            <div>
+              <Label>Despacho</Label>
+              <Input value={header.despacho} onInput={(e: { target: { value: string } }) => onHeaderChange({ despacho: e.target.value })} placeholder="Cond. expedición" aria-label="Despacho" />
+            </div>
+            <div>
+              <Label>Recargo Flete</Label>
+              <Input value={String(header.recargoFlete || '')} onInput={(e: { target: { value: string } }) => onHeaderChange({ recargoFlete: Number(e.target.value) || 0 })} placeholder="0" type="Number" aria-label="Recargo flete" />
+            </div>
+          </FlexBox>
+        </>
       )}
     </div>
   )

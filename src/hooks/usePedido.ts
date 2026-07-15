@@ -14,6 +14,11 @@ const HEADER_INICIAL: IPedidoHeader = {
   referencia: '',
   observaciones: '',
   ubicacionPredio: '',
+  retira: '',
+  descuentoPorcentaje: 0,
+  patente: '',
+  despacho: '',
+  recargoFlete: 0,
 }
 
 export function usePedido() {
@@ -49,6 +54,11 @@ export function usePedido() {
         unidadMedida: articulo.unidadMedida,
         precioUnitario: articulo.precioUnitario,
         subtotal: articulo.precioUnitario,
+        centroSuministrador: '',
+        almacen: '',
+        recargo: 0,
+        descuentoLinea: 0,
+        fechaEntrega: '',
       }
       return [...prev, nuevaLinea]
     })

@@ -3,7 +3,7 @@ import { Select, Option, Input, Label, FlexBox } from '@ui5/webcomponents-react'
 import type { IPedidoHeader } from '@/types/pedido'
 import type { ICliente } from '@/types/cliente'
 import { ClienteSearch } from './ClienteSearch'
-import { getCanalesDistribucion, getDocumentosVenta, type ICanalDistribucion, type IDocumentoVenta } from '@/services/api/posMaestros'
+import { getCanalesDistribucion, getDocumentosVenta, getInterlocutoresPorCliente, type ICanalDistribucion, type IDocumentoVenta, type IInterlocutor } from '@/services/api/posMaestros'
 
 interface PedidoHeaderProps {
   header: IPedidoHeader
@@ -26,14 +26,62 @@ export function PedidoHeader({
 }: PedidoHeaderProps) {
   const [canales, setCanales] = useState<ICanalDistribucion[]>([])
   const [documentos, setDocumentos] = useState<IDocumentoVenta[]>([])
+  const [interlocutores, setInterlocutores] = useState<IInterlocutor[]>([])
 
   useEffect(() => {
     getCanalesDistribucion().then(setCanales).catch(() => {})
     getDocumentosVenta().then(setDocumentos).catch(() => {})
   }, [])
 
+  useEffect(() => {
+    if (clienteSeleccionado) {
+      getInterlocutoresPorCliente(clienteSeleccionado.codigoCliente)
+        .then(setInterlocutores)
+        .catch(() => setInterlocutores([]))
+    } else {
+      setInterlocutores([])
+    }
+  }, [clienteSeleccionado])
+
   return (
     <div data-testid="pedido-header" style={{ display: 'grid', gap: '0.75rem' }}>
+      <FlexBox style={{ gap: '1rem', flexWrap: 'wrap' }}>
+            <div>
+              <Label>Destinatario Mercancía</Label>
+              <Select
+                onChange={(e) => {
+                  const val = (e.detail?.selectedOption as HTMLElement)?.dataset?.id ?? ''
+                  onHeaderChange({ destinatarioMercancia: val })
+                }}
+                aria-label="Destinatario mercancía"
+              >
+                <Option data-id="" selected={!header.destinatarioMercancia}>-- Seleccionar --</Option>
+                {interlocutores.map((i) => (
+                  <Option key={`dest-${i.id}`} data-id={i.BPCustomerNumber} selected={header.destinatarioMercancia === i.BPCustomerNumber}>
+                    {i.BPCustomerNumber} — {i.PartnerFunction} {i.CustomerPartnerDescription}
+                  </Option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <Label>Quien Retira</Label>
+              <Select
+                onChange={(e) => {
+                  const val = (e.detail?.selectedOption as HTMLElement)?.dataset?.id ?? ''
+                  onHeaderChange({ quienRetira: val })
+                }}
+                aria-label="Quien retira"
+              >
+                <Option data-id="" selected={!header.quienRetira}>-- Seleccionar --</Option>
+                {interlocutores.map((i) => (
+                  <Option key={`ret-${i.id}`} data-id={i.BPCustomerNumber} selected={header.quienRetira === i.BPCustomerNumber}>
+                    {i.BPCustomerNumber} — {i.PartnerFunction} {i.CustomerPartnerDescription}
+                  </Option>
+                ))}
+              </Select>
+            </div>
+          </FlexBox>
+      
       <FlexBox style={{ gap: '1rem', flexWrap: 'wrap' }}>
         <div>
           <Label>Canal Distribución</Label>

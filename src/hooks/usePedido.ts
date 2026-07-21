@@ -19,6 +19,8 @@ const HEADER_INICIAL: IPedidoHeader = {
   patente: '',
   despacho: '',
   recargoFlete: 0,
+  destinatarioMercancia: '',
+  quienRetira: '',
 }
 
 export function usePedido() {

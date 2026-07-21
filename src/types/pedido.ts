@@ -28,6 +28,8 @@ export interface IPedidoHeader {
   patente: string           // Patente vehículo, texto libre
   despacho: string          // Condición de expedición (VBAK-VSBED)
   recargoFlete: number      // Monto recargo flete (condición ZFEM)
+  destinatarioMercancia: string  // Interlocutor - Destinatario de mercancía
+  quienRetira: string            // Interlocutor - Quien retira
 }
 
 export interface IPedido {

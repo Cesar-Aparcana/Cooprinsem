@@ -265,3 +265,25 @@ model SapRegion {
 
   @@map("Sap_region")
 }
+
+model SapClienteInterlocutor {
+  id                         Int      @id @default(autoincrement())
+  Customer                   String   @db.VarChar(10)
+  SalesOrganization          String   @db.VarChar(4)
+  DistributionChannel        String   @db.VarChar(2)
+  Division                   String   @db.VarChar(2)
+  PartnerCounter             String   @db.VarChar(3)
+  PartnerFunction            String   @db.VarChar(2)
+  BPCustomerNumber           String   @db.VarChar(10)
+  CustomerPartnerDescription String   @db.VarChar(30)
+  DefaultPartner             Boolean  @default(false)
+  Supplier                   String   @default("") @db.VarChar(10)
+  PersonnelNumber            String   @default("") @db.VarChar(8)
+  ContactPerson              String   @default("") @db.VarChar(10)
+  AddressID                  String   @default("") @db.VarChar(10)
+  AuthorizationGroup         String   @default("") @db.VarChar(4)
+  created_at                 DateTime @default(now()) @db.Timestamptz()
+  updated_at                 DateTime @default(now()) @db.Timestamptz()
+
+  @@map("Sap_clientes_interlocutor")
+}

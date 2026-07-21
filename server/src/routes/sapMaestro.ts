@@ -93,4 +93,21 @@ router.get('/regiones', asyncHandler(async (req: Request, res: Response) => {
   res.json({ d: { results: regiones } });
 }));
 
+// GET /api/sap-maestro/interlocutores?customer=0001234567
+router.get('/interlocutores', asyncHandler(async (req: Request, res: Response) => {
+  const { customer } = req.query;
+
+  if (!customer) {
+    return res.status(400).json({ error: 'Parámetro customer es requerido' });
+  }
+
+  const customerClean = String(customer).replace(/^0+/, '') || '0';
+  const interlocutores = await prisma.sapClienteInterlocutor.findMany({
+    where: { Customer: customerClean },
+    orderBy: { PartnerFunction: 'asc' },
+  });
+
+  res.json({ d: { results: interlocutores } });
+}));
+
 export default router;

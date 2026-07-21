@@ -215,3 +215,27 @@ export async function deleteCanalDistribucion(id: number): Promise<void> {
   const res = await fetch(`${API_BASE_URL}/api/pos-maestros/canales-distribucion/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error(`Error: ${res.status}`)
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INTERLOCUTORES (Sap_clientes_interlocutor)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface IInterlocutor {
+  id: number
+  Customer: string
+  SalesOrganization: string
+  DistributionChannel: string
+  Division: string
+  PartnerCounter: string
+  PartnerFunction: string
+  BPCustomerNumber: string
+  CustomerPartnerDescription: string
+  DefaultPartner: boolean
+}
+
+export async function getInterlocutoresPorCliente(customer: string): Promise<IInterlocutor[]> {
+  const res = await fetch(`${API_BASE_URL}/api/sap-maestro/interlocutores?customer=${encodeURIComponent(customer)}`)
+  if (!res.ok) throw new Error(`Error: ${res.status}`)
+  const json = await res.json()
+  return json.d.results
+}

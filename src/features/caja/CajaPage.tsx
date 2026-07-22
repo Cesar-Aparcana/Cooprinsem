@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Title,
@@ -27,6 +27,8 @@ import { AntClientePanel } from '@/features/caja/AntClientePanel'
 import { ArqueoCajaPanel } from '@/features/caja/ArqueoCajaPanel'
 import { CajaFacturaList } from '@/components/pos/CajaFacturaList'
 import { useCaja } from '@/hooks/useCaja'
+import { consultarAperturaCaja, grabarAperturaCaja } from '@/services/api/sapCaja'
+import { AperturaCajaDialog } from '@/components/pos/AperturaCajaDialog'
 import { useUser } from '@/stores/userContext'
 import { SUCURSALES, SAP_SOCIEDAD } from '@/config/sap'
 import type { CodigoSucursal } from '@/config/sap'
@@ -49,6 +51,23 @@ export function CajaPage() {
   const navigate = useNavigate()
   const [moduloActivo, setModuloActivo] = useState('pago-cta-cte')
   const [showSalirConfirm, setShowSalirConfirm] = useState(false)
+  const [cajaAbierta, setCajaAbierta] = useState<boolean | null>(null) // null = consultando
+  const [showApertura, setShowApertura] = useState(false)
+  const [aperturaError, setAperturaError] = useState<string | null>(null)
+  const [isGrabandoApertura, setIsGrabandoApertura] = useState(false)
+
+  // Consultar si ya existe apertura de caja al entrar
+  useEffect(() => {
+    if (!usuario) return
+    consultarAperturaCaja(usuario.id, usuario.sucursal)
+      .then((res) => {
+        setCajaAbierta(res.encontrada)
+        if (!res.encontrada) setShowApertura(true)
+      })
+      .catch(() => {
+        setCajaAbierta(true) // Si SAP no responde, dejar operar sin bloquear
+      })
+  }, [usuario])
 
   const {
     filtroCliente,
@@ -80,6 +99,28 @@ export function CajaPage() {
     setShowSalirConfirm(true)
   }, [])
 
+  const handleAceptarApertura = useCallback(async (monto: number, fecha: string) => {
+    if (!usuario) return
+    setIsGrabandoApertura(true)
+    setAperturaError(null)
+    try {
+      await grabarAperturaCaja({
+        usuario: usuario.id,
+        sociedad: SAP_SOCIEDAD,
+        sucursal: usuario.sucursal,
+        fecha,
+        monto,
+        moneda: 'CLP',
+      })
+      setCajaAbierta(true)
+      setShowApertura(false)
+    } catch (err) {
+      setAperturaError(err instanceof Error ? err.message : 'Error al grabar apertura')
+    } finally {
+      setIsGrabandoApertura(false)
+    }
+  }, [usuario])
+  
   const handleSalirConfirm = useCallback((action: string | undefined) => {
     setShowSalirConfirm(false)
     if (action === 'OK') {
@@ -254,6 +295,20 @@ export function CajaPage() {
         {/* Arqueo de Caja */}
         {moduloActivo === 'arqueo-caja' && <ArqueoCajaPanel />}
 
+        {/* Popup Apertura de Caja */}
+        <AperturaCajaDialog
+          open={showApertura}
+          usuario={usuario?.id ?? ''}
+          sociedad={SAP_SOCIEDAD}
+          nombreSociedad="COOPRINSEM LTDA."
+          sucursal={usuario?.sucursal ?? ''}
+          nombreSucursal={SUCURSALES[usuario?.sucursal as CodigoSucursal] ?? usuario?.sucursal ?? ''}
+          onAceptar={handleAceptarApertura}
+          onCancelar={() => setShowApertura(false)}
+          isGrabando={isGrabandoApertura}
+          error={aperturaError}
+        />
+        
         {/* Confirmación salir de caja */}
         {showSalirConfirm && (
           <MessageBox

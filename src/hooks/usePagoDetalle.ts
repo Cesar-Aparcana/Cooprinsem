@@ -59,13 +59,16 @@ export function usePagoDetalle({ kunnr, belnrPreseleccionado, belnrsPreseleccion
     getPartidasAbiertas(kunnr)
       .then((data) => {
         if (!cancelled) {
-          setPartidas(data)
-          // Pre-seleccionar documentos
+          // Si vienen documentos específicos desde la lista, solo mostrar esos
           if (belnrsPreseleccionados && belnrsPreseleccionados.length > 0) {
-            const validos = belnrsPreseleccionados.filter(b => data.some(p => p.belnr === b))
-            setSelectedBelnrs(validos)
-          } else if (belnrPreseleccionado && data.some(p => p.belnr === belnrPreseleccionado)) {
-            setSelectedBelnrs([belnrPreseleccionado])
+            const filtradas = data.filter(p => belnrsPreseleccionados.includes(p.belnr))
+            setPartidas(filtradas)
+            setSelectedBelnrs(belnrsPreseleccionados.filter(b => filtradas.some(p => p.belnr === b)))
+          } else {
+            setPartidas(data)
+            if (belnrPreseleccionado && data.some(p => p.belnr === belnrPreseleccionado)) {
+              setSelectedBelnrs([belnrPreseleccionado])
+            }
           }
         }
       })

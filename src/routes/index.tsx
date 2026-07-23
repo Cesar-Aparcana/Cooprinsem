@@ -68,7 +68,7 @@ export function AppRoutes() {
           }
         />
         <Route
-          path="/caja/pago/:belnr"
+          path="/caja/pago/:belnr?"
           element={
             <ProtectedRoute allowedRoles={[ROLES.ADMINISTRADOR, ROLES.CAJA]}>
               <PagoDetallePage />

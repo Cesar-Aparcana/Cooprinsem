@@ -80,6 +80,7 @@ export function CajaFacturaList({
       <Table
         headerRow={
           <TableHeaderRow>
+            <TableHeaderCell style={{ width: '50px' }}>Sel.</TableHeaderCell>
             <TableHeaderCell>Estado</TableHeaderCell>
             {mostrarColumnaCliente && <TableHeaderCell>Cliente</TableHeaderCell>}
             <TableHeaderCell>Nº Documento</TableHeaderCell>
@@ -115,6 +116,16 @@ export function CajaFacturaList({
               }}
               data-testid={`partida-row-${p.belnr}`}
             >
+              
+              <TableCell>
+                <input
+                  type="checkbox"
+                  checked={partidasSeleccionadas.includes(p.belnr)}
+                  onChange={() => onTogglePartida(p.belnr)}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label={`Seleccionar documento ${p.belnr}`}
+                />
+              </TableCell>
               <TableCell><SemaforoLabel semaforo={p.semaforo} /></TableCell>
               {mostrarColumnaCliente && <TableCell>{clienteLabel}</TableCell>}
               <TableCell>{p.belnr}</TableCell>
@@ -138,6 +149,7 @@ export function CajaFacturaList({
           }}
           data-testid="partida-row-total"
         >
+          <TableCell />
           <TableCell />
           {mostrarColumnaCliente && <TableCell />}
           <TableCell />

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import {
   Title,
@@ -56,6 +56,8 @@ export function PagoDetallePage() {
   const { belnr = '' } = useParams<{ belnr: string }>()
   const [searchParams] = useSearchParams()
   const kunnr = searchParams.get('kunnr') ?? ''
+  const docsParam = searchParams.get('docs') ?? ''
+  const belnrsDesdeQuery = useMemo(() => docsParam ? docsParam.split(',').filter(Boolean) : [], [docsParam])
   const navigate = useNavigate()
   const { usuario } = useUser()
   const sucursal = usuario?.sucursal ?? 'D190'
@@ -86,7 +88,7 @@ export function PagoDetallePage() {
     isCobrando,
     errorCobro,
     resultadoCobro,
-  } = usePagoDetalle({ kunnr, belnrPreseleccionado: belnr })
+  } = usePagoDetalle({ kunnr, belnrPreseleccionado: belnr, belnrsPreseleccionados: belnrsDesdeQuery })
 
   // Auto-rellenar monto recibido con el total seleccionado (solo si no hay pagos ya agregados)
   useEffect(() => {

@@ -51,6 +51,7 @@ export function CajaPage() {
   const navigate = useNavigate()
   const [moduloActivo, setModuloActivo] = useState('pago-cta-cte')
   const [showSalirConfirm, setShowSalirConfirm] = useState(false)
+  const [partidasSeleccionadas, setPartidasSeleccionadas] = useState<string[]>([])
   const [cajaAbierta, setCajaAbierta] = useState<boolean | null>(null) // null = consultando
   const [showApertura, setShowApertura] = useState(false)
   const [aperturaError, setAperturaError] = useState<string | null>(null)
@@ -129,10 +130,35 @@ export function CajaPage() {
     }
   }, [resetear, navigate])
 
-  // Clic en partida → navegar a pantalla detalle de pago
-  const handleClickPartida = useCallback((partida: IPartidaAbierta) => {
-    navigate(`/caja/pago/${partida.belnr}?kunnr=${partida.kunnr}`)
-  }, [navigate])
+  // Toggle selección de partida (checkbox o clic en fila)
+  const handleTogglePartida = useCallback((belnr: string) => {
+    setPartidasSeleccionadas(prev =>
+      prev.includes(belnr)
+        ? prev.filter(b => b !== belnr)
+        : [...prev, belnr]
+    )
+  }, [])
+
+  // Botón Pagos → enviar documentos seleccionados a pantalla de pago
+  const handleIrAPagos = useCallback(() => {
+    if (partidasSeleccionadas.length === 0) return
+
+    // Obtener los clientes de los documentos seleccionados
+    const clientesSeleccionados = new Set(
+      partidas
+        .filter(p => partidasSeleccionadas.includes(p.belnr))
+        .map(p => p.kunnr)
+    )
+
+    if (clientesSeleccionados.size > 1) {
+      alert('Solo puede seleccionar documentos de un mismo cliente para pagar.')
+      return
+    }
+
+    const kunnr = [...clientesSeleccionados][0]
+    const docs = partidasSeleccionadas.join(',')
+    navigate(`/caja/pago?docs=${docs}&kunnr=${kunnr}`)
+  }, [partidasSeleccionadas, partidas, navigate])
 
   return (
     <div style={{ display: 'flex', height: '100%' }}>
@@ -195,7 +221,17 @@ export function CajaPage() {
 
         {moduloActivo === 'pago-cta-cte' && (
           <div style={{ display: 'grid', gap: '1.5rem' }}>
-            <Title level="H3">Listado documentos</Title>
+            <FlexBox justifyContent="SpaceBetween" style={{ alignItems: 'center' }}>
+              <Title level="H3">Listado documentos</Title>
+              <Button
+                design="Emphasized"
+                icon="money-bills"
+                onClick={handleIrAPagos}
+                disabled={partidasSeleccionadas.length === 0}
+              >
+                Pagos ({partidasSeleccionadas.length})
+              </Button>
+            </FlexBox>
 
             {/* Barra de filtros: 4 inputs + estado + limpiar */}
             <FlexBox style={{ gap: '0.75rem', alignItems: 'flex-end' }} wrap="Wrap">
@@ -277,11 +313,10 @@ export function CajaPage() {
             {/* Grilla de partidas — clic navega a detalle de pago */}
             <CajaFacturaList
               partidas={partidas}
-              partidasSeleccionadas={[]}
-              onTogglePartida={() => {}}
+              partidasSeleccionadas={partidasSeleccionadas}
+              onTogglePartida={handleTogglePartida}
               isLoading={isLoadingPartidas}
               mostrarColumnaCliente
-              onClickPartida={handleClickPartida}
             />
           </div>
         )}

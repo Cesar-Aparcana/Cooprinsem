@@ -9,9 +9,10 @@ import { registrarCobroEfectivo } from '@/services/api/cobros'
 interface UsePagoDetalleParams {
   kunnr: string
   belnrPreseleccionado: string
+  belnrsPreseleccionados?: string[]
 }
 
-export function usePagoDetalle({ kunnr, belnrPreseleccionado }: UsePagoDetalleParams) {
+export function usePagoDetalle({ kunnr, belnrPreseleccionado, belnrsPreseleccionados }: UsePagoDetalleParams) {
   const [cliente, setCliente] = useState<ICliente | null>(null)
   const [isLoadingCliente, setIsLoadingCliente] = useState(false)
   const [errorCliente, setErrorCliente] = useState<string | null>(null)
@@ -59,8 +60,11 @@ export function usePagoDetalle({ kunnr, belnrPreseleccionado }: UsePagoDetallePa
       .then((data) => {
         if (!cancelled) {
           setPartidas(data)
-          // Pre-seleccionar el documento del doble clic
-          if (belnrPreseleccionado && data.some(p => p.belnr === belnrPreseleccionado)) {
+          // Pre-seleccionar documentos
+          if (belnrsPreseleccionados && belnrsPreseleccionados.length > 0) {
+            const validos = belnrsPreseleccionados.filter(b => data.some(p => p.belnr === b))
+            setSelectedBelnrs(validos)
+          } else if (belnrPreseleccionado && data.some(p => p.belnr === belnrPreseleccionado)) {
             setSelectedBelnrs([belnrPreseleccionado])
           }
         }
@@ -73,7 +77,7 @@ export function usePagoDetalle({ kunnr, belnrPreseleccionado }: UsePagoDetallePa
       })
 
     return () => { cancelled = true }
-  }, [kunnr, belnrPreseleccionado])
+  }, [kunnr, belnrPreseleccionado, belnrsPreseleccionados])
 
   // Totales
   const totalAPagar = useMemo(

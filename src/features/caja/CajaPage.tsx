@@ -25,6 +25,7 @@ import '@ui5/webcomponents-icons/dist/decline.js'
 import { ListPagaresPanel } from '@/features/caja/ListPagaresPanel'
 import { AntClientePanel } from '@/features/caja/AntClientePanel'
 import { ArqueoCajaPanel } from '@/features/caja/ArqueoCajaPanel'
+import { EgresoCajaDialog } from '@/components/pos/EgresoCajaDialog'
 import { CajaFacturaList } from '@/components/pos/CajaFacturaList'
 import { useCaja } from '@/hooks/useCaja'
 import { consultarAperturaCaja, grabarAperturaCaja } from '@/services/api/sapCaja'
@@ -37,7 +38,7 @@ import type { IPartidaAbierta, Semaforo } from '@/types/caja'
 // Botones del menú de caja (8 funciones según PRD)
 const MENU_CAJA = [
   { id: 'pago-cta-cte', label: 'Pago Cta. Cte.', icon: 'money-bills', habilitado: true },
-  { id: 'egreso-caja', label: 'Egr. de Caja', icon: 'credit-card', habilitado: false },
+  { id: 'egreso-caja', label: 'Egr. de Caja', icon: 'credit-card', habilitado: true },
   { id: 'list-pagares', label: 'List. Pagarés', icon: 'receipt', habilitado: true },
   { id: 'ant-cliente', label: 'Ant. Cliente', icon: 'customer', habilitado: true },
   { id: 'estado-cuenta', label: 'E° de Cuenta', icon: 'account', habilitado: false },
@@ -51,6 +52,10 @@ export function CajaPage() {
   const navigate = useNavigate()
   const [moduloActivo, setModuloActivo] = useState('pago-cta-cte')
   const [showSalirConfirm, setShowSalirConfirm] = useState(false)
+  const [showEgreso, setShowEgreso] = useState(false)
+  const [egresoError, setEgresoError] = useState<string | null>(null)
+  const [isGrabandoEgreso, setIsGrabandoEgreso] = useState(false)
+  const [egresoExito, setEgresoExito] = useState<string | null>(null)
   const [partidasSeleccionadas, setPartidasSeleccionadas] = useState<string[]>([])
   const [cajaAbierta, setCajaAbierta] = useState<boolean | null>(null) // null = consultando
   const [showApertura, setShowApertura] = useState(false)
@@ -122,6 +127,26 @@ export function CajaPage() {
     }
   }, [usuario])
   
+  const handleAceptarEgreso = useCallback(async (datos: {
+    rut: string
+    nombre: string
+    clienteCodigo: string
+    monto: number
+  }) => {
+    setIsGrabandoEgreso(true)
+    setEgresoError(null)
+    setEgresoExito(null)
+    try {
+      // Por ahora solo mostramos confirmación — la contabilización SAP se activa cuando las APIs estén habilitadas
+      // TODO: llamar contabilizarEgreso() cuando las APIs estén listas
+      setShowEgreso(false)
+      setEgresoExito(`Egreso registrado — Cliente: ${datos.clienteCodigo} (${datos.nombre}) — Monto: $${datos.monto.toLocaleString('es-CL')}. Pendiente contabilización SAP.`)
+    } catch (err) {
+      setEgresoError(err instanceof Error ? err.message : 'Error al registrar egreso')
+    } finally {
+      setIsGrabandoEgreso(false)
+    }
+  }, [])
   const handleSalirConfirm = useCallback((action: string | undefined) => {
     setShowSalirConfirm(false)
     if (action === 'OK') {
@@ -184,6 +209,8 @@ export function CajaPage() {
               if (!item.habilitado) return
               if (item.id === 'salir-caja') {
                 handleSalirClick()
+              } else if (item.id === 'egreso-caja') {
+                setShowEgreso(true)
               } else {
                 setModuloActivo(item.id)
               }
@@ -344,6 +371,23 @@ export function CajaPage() {
           error={aperturaError}
         />
         
+        {/* Popup Egreso de Caja */}
+        <EgresoCajaDialog
+          open={showEgreso}
+          sucursal={usuario?.sucursal ?? ''}
+          onAceptar={handleAceptarEgreso}
+          onCancelar={() => { setShowEgreso(false); setEgresoError(null) }}
+          isGrabando={isGrabandoEgreso}
+          error={egresoError}
+        />
+
+        {/* Confirmación de egreso exitoso */}
+        {egresoExito && (
+          <MessageStrip design="Positive" onClose={() => setEgresoExito(null)} style={{ marginBottom: '1rem' }}>
+            {egresoExito}
+          </MessageStrip>
+        )}
+
         {/* Confirmación salir de caja */}
         {showSalirConfirm && (
           <MessageBox

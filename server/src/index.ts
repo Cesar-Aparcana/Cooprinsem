@@ -21,6 +21,7 @@ import posMaestrosRouter from './routes/posMaestros';
 import sapClientesRouter from './routes/sapClientes';
 import sapPedidosRouter from './routes/sapPedidos';
 import sapCajaRouter from './routes/sapCaja';
+import sapEgresoCajaRouter from './routes/sapEgresoCaja';
 
 const app = express();
 const PORT = parseInt(process.env['PORT'] ?? '3001', 10);
@@ -64,6 +65,7 @@ app.use('/api/pos-maestros', posMaestrosRouter);
 app.use('/api/sap-clientes', sapClientesRouter);
 app.use('/api/sap-pedidos', sapPedidosRouter);
 app.use('/api/sap-caja', sapCajaRouter);
+app.use('/api/sap-egreso', sapEgresoCajaRouter);
 
 // 404 handler
 app.use((_req, res) => {

@@ -26,6 +26,7 @@ import { ListPagaresPanel } from '@/features/caja/ListPagaresPanel'
 import { AntClientePanel } from '@/features/caja/AntClientePanel'
 import { ArqueoCajaPanel } from '@/features/caja/ArqueoCajaPanel'
 import { EgresoCajaDialog } from '@/components/pos/EgresoCajaDialog'
+import { ComprobanteEgresoDialog } from '@/components/pos/ComprobanteEgresoDialog'
 import { CajaFacturaList } from '@/components/pos/CajaFacturaList'
 import { useCaja } from '@/hooks/useCaja'
 import { consultarAperturaCaja, grabarAperturaCaja } from '@/services/api/sapCaja'
@@ -56,6 +57,21 @@ export function CajaPage() {
   const [egresoError, setEgresoError] = useState<string | null>(null)
   const [isGrabandoEgreso, setIsGrabandoEgreso] = useState(false)
   const [egresoExito, setEgresoExito] = useState<string | null>(null)
+  const [showComprobante, setShowComprobante] = useState(false)
+  const [comprobanteData, setComprobanteData] = useState<{
+    nroDocumento: string
+    fecha: string
+    sociedad: string
+    sucursal: string
+    nombreSucursal: string
+    clienteNombre: string
+    clienteRut: string
+    clienteCodigo: string
+    monto: number
+    moneda: string
+    usuario: string
+    concepto: string
+  } | null>(null)
   const [partidasSeleccionadas, setPartidasSeleccionadas] = useState<string[]>([])
   const [cajaAbierta, setCajaAbierta] = useState<boolean | null>(null) // null = consultando
   const [showApertura, setShowApertura] = useState(false)
@@ -141,6 +157,21 @@ export function CajaPage() {
       // TODO: llamar contabilizarEgreso() cuando las APIs estén listas
       setShowEgreso(false)
       setEgresoExito(`Egreso registrado — Cliente: ${datos.clienteCodigo} (${datos.nombre}) — Monto: $${datos.monto.toLocaleString('es-CL')}. Pendiente contabilización SAP.`)
+      setComprobanteData({
+        nroDocumento: '',
+        fecha: new Date().toLocaleDateString('es-CL'),
+        sociedad: SAP_SOCIEDAD,
+        sucursal: usuario?.sucursal ?? '',
+        nombreSucursal: SUCURSALES[usuario?.sucursal as CodigoSucursal] ?? usuario?.sucursal ?? '',
+        clienteNombre: datos.nombre,
+        clienteRut: datos.rut,
+        clienteCodigo: datos.clienteCodigo,
+        monto: datos.monto,
+        moneda: 'CLP',
+        usuario: usuario?.nombre ?? usuario?.id ?? '',
+        concepto: 'DEVOL NC',
+      })
+      setShowComprobante(true)
     } catch (err) {
       setEgresoError(err instanceof Error ? err.message : 'Error al registrar egreso')
     } finally {
@@ -387,6 +418,13 @@ export function CajaPage() {
             {egresoExito}
           </MessageStrip>
         )}
+
+        {/* Comprobante de Egreso PDF */}
+        <ComprobanteEgresoDialog
+          open={showComprobante}
+          onCerrar={() => setShowComprobante(false)}
+          datos={comprobanteData}
+        />
 
         {/* Confirmación salir de caja */}
         {showSalirConfirm && (

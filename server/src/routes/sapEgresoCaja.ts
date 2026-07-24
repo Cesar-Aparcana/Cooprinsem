@@ -9,7 +9,7 @@ const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
 function crearClienteSap() {
   const sapUrl = process.env.SAP_ZPOS_URL || process.env.SAP_BASE_URL?.replace(/\/sap\/opu\/odata\/sap\/.*/, '');
-  const sapClient = process.env.SAP_ZPOS_CLIENT || '200';
+  const sapClient = '200';
   const sapUser = process.env.SAP_USER;
   const sapPassword = process.env.SAP_PASSWORD;
 
@@ -46,9 +46,9 @@ router.get('/partidas-abiertas', asyncHandler(async (req: Request, res: Response
   }
 
   const { api } = crearClienteSap();
-  const filter = `Customer eq '${customer}' and CompanyCode eq 'COOP'`;
+  const filter = `Customer eq '${customer}' and CompanyCode eq 'COOP' and IsCleared eq false`;
 
-  const response = await api.get('/sap/opu/odata/sap/API_CUSTOMER_OPEN_ITEMS_SRV/A_CustomerOpenItem', {
+  const response = await api.get('/sap/opu/odata/sap/API_OPLACCTGDOCITEMCUBE_SRV/A_OperationalAcctgDocItemCube', {
     params: {
       $filter: filter,
       $orderby: 'NetDueDate asc',
@@ -150,9 +150,12 @@ router.get('/comprobante', asyncHandler(async (req: Request, res: Response) => {
   const { api } = crearClienteSap();
 
   const response = await api.get(
-    `/sap/opu/odata/sap/API_JOURNALENTRY_SRV/A_JournalEntry(CompanyCode='${companyCode}',FiscalYear='${fiscalYear}',AccountingDocument='${document}')`,
-    { params: { $expand: 'to_JournalEntryItem' } }
-  );
+    `/sap/opu/odata/sap/API_JOURNALENTRYITEMBASIC_SRV/A_JournalEntryItemBasic`, {
+    params: {
+      $filter: `CompanyCode eq '${companyCode}' and FiscalYear eq '${fiscalYear}' and AccountingDocument eq '${document}'`,
+      $orderby: 'AccountingDocumentItem asc',
+    },
+  });
 
   res.json({ d: response.data?.d });
 }));

@@ -239,3 +239,43 @@ export async function getInterlocutoresPorCliente(customer: string): Promise<IIn
   const json = await res.json()
   return json.d.results
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GRUPO CUENTA (MS-07)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface IGrupoCuenta { id: number; codigo: string; descripcion: string }
+export async function getGruposCuenta(): Promise<IGrupoCuenta[]> { const r = await fetch(`${API_BASE_URL}/api/pos-maestros/grupos-cuenta`); const j = await r.json(); return j.data }
+export async function createGrupoCuenta(d: Omit<IGrupoCuenta, 'id'>): Promise<IGrupoCuenta> { const r = await fetch(`${API_BASE_URL}/api/pos-maestros/grupos-cuenta`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }); const j = await r.json(); return j.data }
+export async function updateGrupoCuenta(id: number, d: Omit<IGrupoCuenta, 'id'>): Promise<IGrupoCuenta> { const r = await fetch(`${API_BASE_URL}/api/pos-maestros/grupos-cuenta/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }); const j = await r.json(); return j.data }
+export async function deleteGrupoCuenta(id: number): Promise<void> { await fetch(`${API_BASE_URL}/api/pos-maestros/grupos-cuenta/${id}`, { method: 'DELETE' }) }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CLASE INTERLOCUTOR (MS-08)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface IClaseInterlocutor { id: number; codigo: string; descripcion: string }
+export async function getClasesInterlocutor(): Promise<IClaseInterlocutor[]> { const r = await fetch(`${API_BASE_URL}/api/pos-maestros/clases-interlocutor`); const j = await r.json(); return j.data }
+export async function createClaseInterlocutor(d: Omit<IClaseInterlocutor, 'id'>): Promise<IClaseInterlocutor> { const r = await fetch(`${API_BASE_URL}/api/pos-maestros/clases-interlocutor`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }); const j = await r.json(); return j.data }
+export async function updateClaseInterlocutor(id: number, d: Omit<IClaseInterlocutor, 'id'>): Promise<IClaseInterlocutor> { const r = await fetch(`${API_BASE_URL}/api/pos-maestros/clases-interlocutor/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }); const j = await r.json(); return j.data }
+export async function deleteClaseInterlocutor(id: number): Promise<void> { await fetch(`${API_BASE_URL}/api/pos-maestros/clases-interlocutor/${id}`, { method: 'DELETE' }) }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONDICIÓN DE EXPEDICIÓN (MS-09)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface ICondicionExpedicion { id: number; codigo: string; descripcion: string }
+export async function getCondicionesExpedicion(): Promise<ICondicionExpedicion[]> { const r = await fetch(`${API_BASE_URL}/api/pos-maestros/condiciones-expedicion`); const j = await r.json(); return j.data }
+export async function createCondicionExpedicion(d: Omit<ICondicionExpedicion, 'id'>): Promise<ICondicionExpedicion> { const r = await fetch(`${API_BASE_URL}/api/pos-maestros/condiciones-expedicion`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }); const j = await r.json(); return j.data }
+export async function updateCondicionExpedicion(id: number, d: Omit<ICondicionExpedicion, 'id'>): Promise<ICondicionExpedicion> { const r = await fetch(`${API_BASE_URL}/api/pos-maestros/condiciones-expedicion/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }); const j = await r.json(); return j.data }
+export async function deleteCondicionExpedicion(id: number): Promise<void> { await fetch(`${API_BASE_URL}/api/pos-maestros/condiciones-expedicion/${id}`, { method: 'DELETE' }) }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONDICIÓN DE PAGO (MS-10)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface ICondicionPago { id: number; codigo: string; descripcion: string }
+export async function getCondicionesPago(): Promise<ICondicionPago[]> { const r = await fetch(`${API_BASE_URL}/api/pos-maestros/condiciones-pago`); const j = await r.json(); return j.data }
+export async function createCondicionPago(d: Omit<ICondicionPago, 'id'>): Promise<ICondicionPago> { const r = await fetch(`${API_BASE_URL}/api/pos-maestros/condiciones-pago`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }); const j = await r.json(); return j.data }
+export async function updateCondicionPago(id: number, d: Omit<ICondicionPago, 'id'>): Promise<ICondicionPago> { const r = await fetch(`${API_BASE_URL}/api/pos-maestros/condiciones-pago/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }); const j = await r.json(); return j.data }
+export async function deleteCondicionPago(id: number): Promise<void> { await fetch(`${API_BASE_URL}/api/pos-maestros/condiciones-pago/${id}`, { method: 'DELETE' }) }

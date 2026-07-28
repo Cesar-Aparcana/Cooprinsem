@@ -300,4 +300,104 @@ router.delete('/canales-distribucion/:id', async (req: Request, res: Response) =
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// GRUPO CUENTA (MS-07)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/grupos-cuenta', async (_req: Request, res: Response) => {
+  const pool = await getPool();
+  try { const r = await pool.query('SELECT * FROM pos_grupo_cuenta ORDER BY codigo'); res.json({ success: true, data: r.rows }); }
+  catch (e: any) { res.status(500).json({ success: false, message: e.message }); } finally { await pool.end(); }
+});
+router.post('/grupos-cuenta', async (req: Request, res: Response) => {
+  const { codigo, descripcion } = req.body; const pool = await getPool();
+  try { const r = await pool.query('INSERT INTO pos_grupo_cuenta (codigo, descripcion) VALUES ($1, $2) RETURNING *', [codigo, descripcion]); res.json({ success: true, data: r.rows[0] }); }
+  catch (e: any) { res.status(500).json({ success: false, message: e.message }); } finally { await pool.end(); }
+});
+router.put('/grupos-cuenta/:id', async (req: Request, res: Response) => {
+  const { id } = req.params; const { codigo, descripcion } = req.body; const pool = await getPool();
+  try { const r = await pool.query('UPDATE pos_grupo_cuenta SET codigo=$1, descripcion=$2 WHERE id=$3 RETURNING *', [codigo, descripcion, id]); if (r.rowCount === 0) { res.status(404).json({ success: false, message: 'No encontrado' }); return; } res.json({ success: true, data: r.rows[0] }); }
+  catch (e: any) { res.status(500).json({ success: false, message: e.message }); } finally { await pool.end(); }
+});
+router.delete('/grupos-cuenta/:id', async (req: Request, res: Response) => {
+  const { id } = req.params; const pool = await getPool();
+  try { const r = await pool.query('DELETE FROM pos_grupo_cuenta WHERE id=$1', [id]); if (r.rowCount === 0) { res.status(404).json({ success: false, message: 'No encontrado' }); return; } res.json({ success: true, message: 'Eliminado' }); }
+  catch (e: any) { res.status(500).json({ success: false, message: e.message }); } finally { await pool.end(); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CLASE INTERLOCUTOR (MS-08)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/clases-interlocutor', async (_req: Request, res: Response) => {
+  const pool = await getPool();
+  try { const r = await pool.query('SELECT * FROM pos_clase_interlocutor ORDER BY codigo'); res.json({ success: true, data: r.rows }); }
+  catch (e: any) { res.status(500).json({ success: false, message: e.message }); } finally { await pool.end(); }
+});
+router.post('/clases-interlocutor', async (req: Request, res: Response) => {
+  const { codigo, descripcion } = req.body; const pool = await getPool();
+  try { const r = await pool.query('INSERT INTO pos_clase_interlocutor (codigo, descripcion) VALUES ($1, $2) RETURNING *', [codigo, descripcion]); res.json({ success: true, data: r.rows[0] }); }
+  catch (e: any) { res.status(500).json({ success: false, message: e.message }); } finally { await pool.end(); }
+});
+router.put('/clases-interlocutor/:id', async (req: Request, res: Response) => {
+  const { id } = req.params; const { codigo, descripcion } = req.body; const pool = await getPool();
+  try { const r = await pool.query('UPDATE pos_clase_interlocutor SET codigo=$1, descripcion=$2 WHERE id=$3 RETURNING *', [codigo, descripcion, id]); if (r.rowCount === 0) { res.status(404).json({ success: false, message: 'No encontrado' }); return; } res.json({ success: true, data: r.rows[0] }); }
+  catch (e: any) { res.status(500).json({ success: false, message: e.message }); } finally { await pool.end(); }
+});
+router.delete('/clases-interlocutor/:id', async (req: Request, res: Response) => {
+  const { id } = req.params; const pool = await getPool();
+  try { const r = await pool.query('DELETE FROM pos_clase_interlocutor WHERE id=$1', [id]); if (r.rowCount === 0) { res.status(404).json({ success: false, message: 'No encontrado' }); return; } res.json({ success: true, message: 'Eliminado' }); }
+  catch (e: any) { res.status(500).json({ success: false, message: e.message }); } finally { await pool.end(); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONDICIÓN DE EXPEDICIÓN (MS-09)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/condiciones-expedicion', async (_req: Request, res: Response) => {
+  const pool = await getPool();
+  try { const r = await pool.query('SELECT * FROM pos_condicion_expedicion ORDER BY codigo'); res.json({ success: true, data: r.rows }); }
+  catch (e: any) { res.status(500).json({ success: false, message: e.message }); } finally { await pool.end(); }
+});
+router.post('/condiciones-expedicion', async (req: Request, res: Response) => {
+  const { codigo, descripcion } = req.body; const pool = await getPool();
+  try { const r = await pool.query('INSERT INTO pos_condicion_expedicion (codigo, descripcion) VALUES ($1, $2) RETURNING *', [codigo, descripcion]); res.json({ success: true, data: r.rows[0] }); }
+  catch (e: any) { res.status(500).json({ success: false, message: e.message }); } finally { await pool.end(); }
+});
+router.put('/condiciones-expedicion/:id', async (req: Request, res: Response) => {
+  const { id } = req.params; const { codigo, descripcion } = req.body; const pool = await getPool();
+  try { const r = await pool.query('UPDATE pos_condicion_expedicion SET codigo=$1, descripcion=$2 WHERE id=$3 RETURNING *', [codigo, descripcion, id]); if (r.rowCount === 0) { res.status(404).json({ success: false, message: 'No encontrado' }); return; } res.json({ success: true, data: r.rows[0] }); }
+  catch (e: any) { res.status(500).json({ success: false, message: e.message }); } finally { await pool.end(); }
+});
+router.delete('/condiciones-expedicion/:id', async (req: Request, res: Response) => {
+  const { id } = req.params; const pool = await getPool();
+  try { const r = await pool.query('DELETE FROM pos_condicion_expedicion WHERE id=$1', [id]); if (r.rowCount === 0) { res.status(404).json({ success: false, message: 'No encontrado' }); return; } res.json({ success: true, message: 'Eliminado' }); }
+  catch (e: any) { res.status(500).json({ success: false, message: e.message }); } finally { await pool.end(); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONDICIÓN DE PAGO (MS-10)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/condiciones-pago', async (_req: Request, res: Response) => {
+  const pool = await getPool();
+  try { const r = await pool.query('SELECT * FROM pos_condicion_pago ORDER BY codigo'); res.json({ success: true, data: r.rows }); }
+  catch (e: any) { res.status(500).json({ success: false, message: e.message }); } finally { await pool.end(); }
+});
+router.post('/condiciones-pago', async (req: Request, res: Response) => {
+  const { codigo, descripcion } = req.body; const pool = await getPool();
+  try { const r = await pool.query('INSERT INTO pos_condicion_pago (codigo, descripcion) VALUES ($1, $2) RETURNING *', [codigo, descripcion]); res.json({ success: true, data: r.rows[0] }); }
+  catch (e: any) { res.status(500).json({ success: false, message: e.message }); } finally { await pool.end(); }
+});
+router.put('/condiciones-pago/:id', async (req: Request, res: Response) => {
+  const { id } = req.params; const { codigo, descripcion } = req.body; const pool = await getPool();
+  try { const r = await pool.query('UPDATE pos_condicion_pago SET codigo=$1, descripcion=$2 WHERE id=$3 RETURNING *', [codigo, descripcion, id]); if (r.rowCount === 0) { res.status(404).json({ success: false, message: 'No encontrado' }); return; } res.json({ success: true, data: r.rows[0] }); }
+  catch (e: any) { res.status(500).json({ success: false, message: e.message }); } finally { await pool.end(); }
+});
+router.delete('/condiciones-pago/:id', async (req: Request, res: Response) => {
+  const { id } = req.params; const pool = await getPool();
+  try { const r = await pool.query('DELETE FROM pos_condicion_pago WHERE id=$1', [id]); if (r.rowCount === 0) { res.status(404).json({ success: false, message: 'No encontrado' }); return; } res.json({ success: true, message: 'Eliminado' }); }
+  catch (e: any) { res.status(500).json({ success: false, message: e.message }); } finally { await pool.end(); }
+});
+
 export default router;

@@ -24,10 +24,14 @@ import {
   getOficinasVenta, createOficinaVenta, updateOficinaVenta, deleteOficinaVenta,
   getCentrosSuministrador, createCentroSuministrador, updateCentroSuministrador, deleteCentroSuministrador,
   getCanalesDistribucion, createCanalDistribucion, updateCanalDistribucion, deleteCanalDistribucion,
+  getGruposCuenta, createGrupoCuenta, updateGrupoCuenta, deleteGrupoCuenta,
+  getClasesInterlocutor, createClaseInterlocutor, updateClaseInterlocutor, deleteClaseInterlocutor,
+  getCondicionesExpedicion, createCondicionExpedicion, updateCondicionExpedicion, deleteCondicionExpedicion,
+  getCondicionesPago, createCondicionPago, updateCondicionPago, deleteCondicionPago,
   type IDocumentoVenta, type IOficinaVenta, type ICentroSuministrador, type ICanalDistribucion,
 } from '@/services/api/posMaestros'
 
-type SubTab = 'documentos' | 'oficinas' | 'centros' | 'canales'
+type SubTab = 'documentos' | 'oficinas' | 'centros' | 'canales' | 'grupos-cuenta' | 'clases-interlocutor' | 'condiciones-expedicion' | 'condiciones-pago'
 
 export function PosMaestrosPanel() {
   const [subTab, setSubTab] = useState<SubTab>('documentos')
@@ -40,11 +44,19 @@ export function PosMaestrosPanel() {
         <Button design={subTab === 'oficinas' ? 'Emphasized' : 'Default'} onClick={() => setSubTab('oficinas')}>Oficinas de Ventas</Button>
         <Button design={subTab === 'centros' ? 'Emphasized' : 'Default'} onClick={() => setSubTab('centros')}>Centros Suministrador</Button>
         <Button design={subTab === 'canales' ? 'Emphasized' : 'Default'} onClick={() => setSubTab('canales')}>Canal Distribución</Button>
+        <Button design={subTab === 'grupos-cuenta' ? 'Emphasized' : 'Default'} onClick={() => setSubTab('grupos-cuenta')}>Grupo Cuenta</Button>
+        <Button design={subTab === 'clases-interlocutor' ? 'Emphasized' : 'Default'} onClick={() => setSubTab('clases-interlocutor')}>Clase Interlocutor</Button>
+        <Button design={subTab === 'condiciones-expedicion' ? 'Emphasized' : 'Default'} onClick={() => setSubTab('condiciones-expedicion')}>Cond. Expedición</Button>
+        <Button design={subTab === 'condiciones-pago' ? 'Emphasized' : 'Default'} onClick={() => setSubTab('condiciones-pago')}>Cond. Pago</Button>
       </div>
       {subTab === 'documentos' && <DocumentosVentaTab />}
       {subTab === 'oficinas' && <OficinasVentaTab />}
       {subTab === 'centros' && <CentrosSuministradorTab />}
       {subTab === 'canales' && <CanalesDistribucionTab />}
+      {subTab === 'grupos-cuenta' && <GruposCuentaTab />}
+      {subTab === 'clases-interlocutor' && <ClasesInterlocutorTab />}
+      {subTab === 'condiciones-expedicion' && <CondicionesExpedicionTab />}
+      {subTab === 'condiciones-pago' && <CondicionesPagoTab />}
     </div>
   )
 }
@@ -273,5 +285,45 @@ function CanalesDistribucionTab() {
     createData={(data: any) => createCanalDistribucion({ codigo: data.codigo, descripcion: data.nombre })}
     updateData={(id: number, data: any) => updateCanalDistribucion(id, { codigo: data.codigo, descripcion: data.nombre })}
     deleteData={deleteCanalDistribucion}
+  />
+}
+
+function GruposCuentaTab() {
+  return <TablaCodigoNombre
+    titulo="Grupo Cuenta"
+    getData={async () => { const d = await getGruposCuenta(); return d.map(i => ({ id: i.id, codigo: i.codigo, nombre: i.descripcion, org_ventas: '', canal_distribucion: '', sector: '' })) }}
+    createData={(data: any) => createGrupoCuenta({ codigo: data.codigo, descripcion: data.nombre })}
+    updateData={(id: number, data: any) => updateGrupoCuenta(id, { codigo: data.codigo, descripcion: data.nombre })}
+    deleteData={deleteGrupoCuenta}
+  />
+}
+
+function ClasesInterlocutorTab() {
+  return <TablaCodigoNombre
+    titulo="Clase Interlocutor"
+    getData={async () => { const d = await getClasesInterlocutor(); return d.map(i => ({ id: i.id, codigo: i.codigo, nombre: i.descripcion, org_ventas: '', canal_distribucion: '', sector: '' })) }}
+    createData={(data: any) => createClaseInterlocutor({ codigo: data.codigo, descripcion: data.nombre })}
+    updateData={(id: number, data: any) => updateClaseInterlocutor(id, { codigo: data.codigo, descripcion: data.nombre })}
+    deleteData={deleteClaseInterlocutor}
+  />
+}
+
+function CondicionesExpedicionTab() {
+  return <TablaCodigoNombre
+    titulo="Condición Expedición"
+    getData={async () => { const d = await getCondicionesExpedicion(); return d.map(i => ({ id: i.id, codigo: i.codigo, nombre: i.descripcion, org_ventas: '', canal_distribucion: '', sector: '' })) }}
+    createData={(data: any) => createCondicionExpedicion({ codigo: data.codigo, descripcion: data.nombre })}
+    updateData={(id: number, data: any) => updateCondicionExpedicion(id, { codigo: data.codigo, descripcion: data.nombre })}
+    deleteData={deleteCondicionExpedicion}
+  />
+}
+
+function CondicionesPagoTab() {
+  return <TablaCodigoNombre
+    titulo="Condición Pago"
+    getData={async () => { const d = await getCondicionesPago(); return d.map(i => ({ id: i.id, codigo: i.codigo, nombre: i.descripcion, org_ventas: '', canal_distribucion: '', sector: '' })) }}
+    createData={(data: any) => createCondicionPago({ codigo: data.codigo, descripcion: data.nombre })}
+    updateData={(id: number, data: any) => updateCondicionPago(id, { codigo: data.codigo, descripcion: data.nombre })}
+    deleteData={deleteCondicionPago}
   />
 }

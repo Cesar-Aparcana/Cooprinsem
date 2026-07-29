@@ -34,6 +34,8 @@ import { validarRUT } from '@/utils/validations'
 import type { ICliente, ICrearCliente } from '@/types/cliente'
 import { getSapRegiones } from '@/services/api/sapMaestro'
 import type { ISapRegion } from '@/types/sapMaestro'
+import { DestinatarioDialog, type IDestinatario } from '@/components/pos/DestinatarioDialog'
+import { PersonaRetiraDialog, type IPersonaRetira } from '@/components/pos/PersonaRetiraDialog'
 
 type SubTab = 'buscar' | 'crear' | 'ficha'
 
@@ -89,6 +91,12 @@ export function ClientesPanel() {
   const [crearLoading, setCrearLoading] = useState(false)
   const [crearError, setCrearError] = useState<string | null>(null)
   const [crearExito, setCrearExito] = useState<string | null>(null)
+  const [clienteCreado, setClienteCreado] = useState<{ bp: string; datos: ICrearCliente } | null>(null)
+  const [tabPostCreacion, setTabPostCreacion] = useState<'datos' | 'destinatario' | 'retira'>('datos')
+  const [destinatarios, setDestinatarios] = useState<IDestinatario[]>([])
+  const [personasRetira, setPersonasRetira] = useState<IPersonaRetira[]>([])
+  const [showDestinatarioDialog, setShowDestinatarioDialog] = useState(false)
+  const [showRetiraDialog, setShowRetiraDialog] = useState(false)
 
   const updateForm = (field: keyof ICrearCliente, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -323,7 +331,10 @@ export function ClientesPanel() {
       // Intentar crear en SAP primero
       const businessPartner = await crearSapCliente(form)
       setCrearExito(`Cliente ${businessPartner} creado correctamente en SAP`)
-      setForm({ ...FORM_INICIAL })
+      setClienteCreado({ bp: businessPartner, datos: { ...form } })
+      setTabPostCreacion('datos')
+      setDestinatarios([])
+      setPersonasRetira([])
       setCrearLoading(false)
       return
     } catch (err) {
@@ -339,6 +350,7 @@ export function ClientesPanel() {
     setForm({ ...FORM_INICIAL })
     setCrearError(null)
     setCrearExito(null)
+    setClienteCreado(null)
   }
 
   return (
@@ -509,7 +521,7 @@ export function ClientesPanel() {
       )}
 
       {/* ====== SUB-TAB: CREAR ====== */}
-      {subTab === 'crear' && (
+      {subTab === 'crear' && !clienteCreado && (
         <div style={{ display: 'grid', gap: '1rem' }}>
           <Title level="H4">Creación de clientes</Title>
           <Label>Ingrese la información correspondiente</Label>
@@ -611,6 +623,100 @@ export function ClientesPanel() {
           </FlexBox>
 
           <BusyIndicator active={crearLoading} size="L"><div /></BusyIndicator>
+        </div>
+      )}
+
+      {/* ====== SUB-TAB: CREAR — POST-CREACIÓN (pestañas interlocutores) ====== */}
+      {subTab === 'crear' && clienteCreado && (
+        <div style={{ display: 'grid', gap: '1rem' }}>
+          {crearExito && <MessageStrip design="Positive" hideCloseButton>{crearExito}</MessageStrip>}
+
+          <FlexBox alignItems="Center" style={{ gap: '0.75rem' }}>
+            <Title level="H4">Cliente {clienteCreado.bp}</Title>
+            <Button design="Transparent" onClick={() => { setClienteCreado(null); setForm({ ...FORM_INICIAL }); setCrearExito(null) }}>
+              Crear otro cliente
+            </Button>
+          </FlexBox>
+
+          {/* Pestañas: Datos generales | Destinatario merc. | Persona retira */}
+          <FlexBox style={{ gap: '0.5rem', borderBottom: '1px solid var(--sapGroup_TitleBorderColor, #d9d9d9)', paddingBottom: '0.5rem' }}>
+            <Button design={tabPostCreacion === 'datos' ? 'Emphasized' : 'Default'} onClick={() => setTabPostCreacion('datos')}>Datos generales</Button>
+            <Button design={tabPostCreacion === 'destinatario' ? 'Emphasized' : 'Default'} onClick={() => setTabPostCreacion('destinatario')}>Destinatario merc.</Button>
+            <Button design={tabPostCreacion === 'retira' ? 'Emphasized' : 'Default'} onClick={() => setTabPostCreacion('retira')}>Persona retira</Button>
+          </FlexBox>
+
+          {/* Pestaña: Datos generales */}
+          {tabPostCreacion === 'datos' && (
+            <Card header={<CardHeader titleText="Datos generales" />}>
+              <div style={{ padding: '1rem', display: 'grid', gap: '0.4rem', maxWidth: '500px' }}>
+                {renderCampo('Nº Cliente', clienteCreado.bp)}
+                {renderCampo('Tratamiento', clienteCreado.datos.tratamiento)}
+                {renderCampo('Rut', clienteCreado.datos.rut)}
+                {renderCampo('Nombre 1', clienteCreado.datos.nombre)}
+                {renderCampo('Nombre 2', clienteCreado.datos.nombre2)}
+                {renderCampo('Concepto Búsqueda', clienteCreado.datos.conceptoBusqueda)}
+                {renderCampo('Giro', clienteCreado.datos.giro)}
+                {renderCampo('Bienvenido', '')}
+                {renderCampo('Comuna', clienteCreado.datos.comuna)}
+                {renderCampo('Región', regionesSap.find(r => r.Codigo === clienteCreado.datos.region)?.Descripcion ?? clienteCreado.datos.region)}
+                {renderCampo('Ciudad', clienteCreado.datos.ciudad)}
+                {renderCampo('Zona transporte', clienteCreado.datos.zonaTransporte)}
+                {renderCampo('Teléfono', clienteCreado.datos.telefono)}
+                {renderCampo('Celular', clienteCreado.datos.celular)}
+              </div>
+            </Card>
+          )}
+
+          {/* Pestaña: Destinatario mercancía */}
+          {tabPostCreacion === 'destinatario' && (
+            <div>
+              <FlexBox justifyContent="End" style={{ marginBottom: '0.5rem' }}>
+                <Button icon="add" design="Emphasized" onClick={() => setShowDestinatarioDialog(true)}>Destinatario</Button>
+              </FlexBox>
+              <Table headerRow={<TableHeaderRow><TableHeaderCell>Cliente</TableHeaderCell><TableHeaderCell>Nombre</TableHeaderCell><TableHeaderCell>Descripción</TableHeaderCell><TableHeaderCell>NúmBP</TableHeaderCell></TableHeaderRow>}>
+                {destinatarios.map((d, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{d.rut}</TableCell>
+                    <TableCell>{d.nombre1}</TableCell>
+                    <TableCell>{d.nombre2}</TableCell>
+                    <TableCell>{clienteCreado.bp}</TableCell>
+                  </TableRow>
+                ))}
+              </Table>
+              {destinatarios.length === 0 && <MessageStrip design="Information" hideCloseButton style={{ marginTop: '0.5rem' }}>No hay destinatarios. Presione "+ Destinatario" para agregar.</MessageStrip>}
+            </div>
+          )}
+
+          {/* Pestaña: Persona retira */}
+          {tabPostCreacion === 'retira' && (
+            <div>
+              <FlexBox justifyContent="End" style={{ marginBottom: '0.5rem' }}>
+                <Button icon="add" design="Emphasized" onClick={() => setShowRetiraDialog(true)}>Retira</Button>
+              </FlexBox>
+              <Table headerRow={<TableHeaderRow><TableHeaderCell>RUT</TableHeaderCell><TableHeaderCell>Nombre 1</TableHeaderCell></TableHeaderRow>}>
+                {personasRetira.map((p, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{p.rut}</TableCell>
+                    <TableCell>{p.nombre1}</TableCell>
+                  </TableRow>
+                ))}
+              </Table>
+              {personasRetira.length === 0 && <MessageStrip design="Information" hideCloseButton style={{ marginTop: '0.5rem' }}>No hay personas. Presione "+ Retira" para agregar.</MessageStrip>}
+            </div>
+          )}
+
+          {/* Popups */}
+          <DestinatarioDialog
+            open={showDestinatarioDialog}
+            onGuardar={(d) => { setDestinatarios(prev => [...prev, d]); setShowDestinatarioDialog(false) }}
+            onCancelar={() => setShowDestinatarioDialog(false)}
+            regiones={regionesSap}
+          />
+          <PersonaRetiraDialog
+            open={showRetiraDialog}
+            onGuardar={(p) => { setPersonasRetira(prev => [...prev, p]); setShowRetiraDialog(false) }}
+            onCancelar={() => setShowRetiraDialog(false)}
+          />
         </div>
       )}
 

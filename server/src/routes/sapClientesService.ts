@@ -126,6 +126,23 @@ export async function buscarClientePorNumero(numeroCliente: string): Promise<Sap
  * @param rut - RUT del cliente (ej: "12345678-9")
  * @returns Lista de clientes que coinciden con el RUT
  */
+/**
+ * Busca clientes en SAP por nombre (case-insensitive, búsqueda parcial)
+ */
+export async function buscarClientePorNombre(nombre: string): Promise<SapCliente[]> {
+  const cliente = crearClienteAxios();
+  const nombreUpper = nombre.toUpperCase();
+
+  const response = await cliente.get('/A_BusinessPartner', {
+    params: {
+      $filter: `substringof('${nombreUpper}', BusinessPartnerName) or substringof('${nombreUpper}', BusinessPartnerFullName)`,
+      $top: '50',
+      $format: 'json',
+    },
+  });
+
+  return response.data?.d?.results ?? [];
+}
 export async function buscarClientePorRut(rut: string): Promise<SapCliente[]> {
   const cliente = crearClienteAxios();
 

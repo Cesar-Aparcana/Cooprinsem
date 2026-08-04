@@ -15,6 +15,7 @@ import type { ICliente } from '@/types/cliente'
 import { buscarClientes, getCliente } from '@/services/api/clientes'
 import { formatCLP } from '@/utils/format'
 import { CLIENTE_BOLETA } from '@/config/sap'
+import { BusquedaClienteDialog } from './BusquedaClienteDialog'
 
 interface ClienteSearchProps {
   onClienteSeleccionado: (cliente: ICliente) => void
@@ -31,6 +32,7 @@ export function ClienteSearch({
 }: ClienteSearchProps) {
   const [sugerencias, setSugerencias] = useState<ICliente[]>([])
   const [seleccionado, setSeleccionado] = useState<ICliente | null>(null)
+  const [showBusquedaPopup, setShowBusquedaPopup] = useState(false)
   const [_isLoading, setIsLoading] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inputRef = useRef<InputDomRef>(null)
@@ -147,13 +149,10 @@ export function ClienteSearch({
           />
         )}
         {!seleccionado && (
-          <Button
-            design="Transparent"
-            onClick={handleClienteBoleta}
-            disabled={disabled}
-          >
-            Cliente Boleta
-          </Button>
+          <>
+            <Button design="Transparent" icon="search" onClick={() => setShowBusquedaPopup(true)} disabled={disabled} aria-label="Búsqueda avanzada" />
+            <Button design="Transparent" onClick={handleClienteBoleta} disabled={disabled}>Cliente Boleta</Button>
+          </>
         )}
       </FlexBox>
 
@@ -198,6 +197,18 @@ export function ClienteSearch({
           )}
         </div>
       )}
+
+      <BusquedaClienteDialog
+        open={showBusquedaPopup}
+        onSeleccionar={(c) => {
+          setSeleccionado(c)
+          if (inputRef.current) inputRef.current.value = c.nombre
+          onClienteSeleccionado(c)
+          setShowBusquedaPopup(false)
+        }}
+        onCerrar={() => setShowBusquedaPopup(false)}
+        sucursal={sucursal}
+      />
     </div>
   )
 }

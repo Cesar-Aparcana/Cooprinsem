@@ -93,6 +93,16 @@ export async function buscarSapClientePorNumero(numero: string): Promise<SapClie
  * @param rut - RUT del cliente (ej: "12345678-9")
  * @returns Lista de clientes que coinciden con el RUT
  */
+export async function buscarSapClientePorNombre(nombre: string): Promise<SapClienteResult[]> {
+  const params = new URLSearchParams({ nombre });
+  const response = await fetch(`${API_BASE_URL}/api/sap-clientes/buscar?${params}`);
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error((error as any).message ?? `Error buscando por nombre: ${response.status}`);
+  }
+  const json: { success: boolean; total: number; data: SapClienteResult[] } = await response.json();
+  return json.data;
+}
 export async function buscarSapClientePorRut(rut: string): Promise<SapClienteResult[]> {
   const params = new URLSearchParams({ rut });
   const response = await fetch(`${API_BASE_URL}/api/sap-clientes/buscar?${params}`);

@@ -23,6 +23,7 @@ import '@ui5/webcomponents-icons/dist/customer.js'
 import '@ui5/webcomponents-icons/dist/save.js'
 import '@ui5/webcomponents-icons/dist/decline.js'
 import { getCliente, buscarClientes, crearCliente } from '@/services/api/clientes'
+import { BusquedaClienteDialog } from '@/components/pos/BusquedaClienteDialog'
 import {
   buscarSapClientePorNumero,
   buscarSapClientePorRut,
@@ -68,6 +69,7 @@ export function ClientesPanel() {
 
   // --- Estado Buscar ---
   const [buscarCodigo, setBuscarCodigo] = useState('')
+  const [showBusquedaPopup, setShowBusquedaPopup] = useState(false)
   const [clienteBuscado, setClienteBuscado] = useState<ICliente | null>(null)
   const [buscarLoading, setBuscarLoading] = useState(false)
   const [buscarError, setBuscarError] = useState<string | null>(null)
@@ -434,7 +436,20 @@ export function ClientesPanel() {
             <Button icon="search" design="Emphasized" onClick={handleBuscarCliente} disabled={!buscarCodigo.trim() || buscarLoading}>
               Buscar cliente
             </Button>
+            <Button design="Default" icon="search" onClick={() => setShowBusquedaPopup(true)}>
+              Búsqueda avanzada
+            </Button>
           </FlexBox>
+
+          <BusquedaClienteDialog
+            open={showBusquedaPopup}
+            onSeleccionar={(c) => {
+              setClienteBuscado(c)
+              setBuscarCodigo(c.codigoCliente)
+              setShowBusquedaPopup(false)
+            }}
+            onCerrar={() => setShowBusquedaPopup(false)}
+          />
 
           {buscarError && <MessageStrip design="Negative">{buscarError}</MessageStrip>}
 

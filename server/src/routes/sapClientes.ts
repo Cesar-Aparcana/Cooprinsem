@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import {
   buscarClientePorNumero,
   buscarClientePorRut,
+  buscarClientePorNombre,
   obtenerDireccionCliente,
   obtenerRutCliente,
   crearClienteSap,
@@ -33,6 +34,20 @@ router.get('/buscar', async (req: Request, res: Response) => {
   }
 
   try {
+    const nombre = req.query.nombre as string | undefined;
+
+    if (nombre) {
+      const clientes = await buscarClientePorNombre(nombre);
+      const clientesEnriquecidos = await Promise.all(
+        clientes.map(async (c) => {
+          const direccion = await obtenerDireccionCliente(c.BusinessPartner).catch(() => null);
+          const rut = await obtenerRutCliente(c.BusinessPartner).catch(() => '');
+          return { ...c, TaxNumber1: rut, direccion };
+        })
+      );
+      res.json({ success: true, total: clientesEnriquecidos.length, data: clientesEnriquecidos });
+      return;
+    }
     if (numero) {
       // Búsqueda por número de cliente
       const cliente = await buscarClientePorNumero(numero as string);
